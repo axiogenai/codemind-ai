@@ -1,0 +1,28 @@
+# Dependencies
+node_modules/
+frontend/node_modules/
+backend/venv/
+backend/venv*/
+venv/
+.venv/
+
+# Environment Variables & Secrets
+.env
+backend/.env
+frontend/.env.local
+*.env.local
+
+# Build Outputs
+dist/
+build/
+frontend/dist/
+*.egg-info/
+__pycache__/
+*.pyc
+*.pyo
+
+# Temporary files & Scans
+scanned_repos/
+*.log
+.DS_Store
+Thumbs.db

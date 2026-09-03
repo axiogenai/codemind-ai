@@ -1,0 +1,41 @@
+# CodeMind AI Hugging Face Spaces Production Dockerfile
+FROM node:20-alpine as frontend-build
+
+WORKDIR /app/frontend
+COPY frontend/package*.json ./
+RUN npm ci
+COPY frontend/ ./
+RUN npm run build
+
+# Stage 2: Python Backend & Unified Server
+FROM python:3.11-slim
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential \
+    curl \
+    && rm -rf /var/lib/apt/lists/*
+
+# Create Hugging Face user (UID 1000)
+RUN useradd -m -u 1000 user
+USER user
+ENV HOME=/home/user \
+    PATH=/home/user/.local/bin:$PATH \
+    PYTHONUNBUFFERED=1
+
+WORKDIR /home/user/app
+
+# Copy backend requirements & install
+COPY --chown=user backend/requirements.txt ./backend/requirements.txt
+RUN pip install --no-cache-dir -r ./backend/requirements.txt
+
+# Copy application source code
+COPY --chown=user . .
+COPY --from=frontend-build --chown=user /app/frontend/dist ./frontend/dist
+
+WORKDIR /home/user/app/backend
+
+# Hugging Face Spaces mandates Port 7860
+EXPOSE 7860
+
+CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "7860"]
