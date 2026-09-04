@@ -523,8 +523,10 @@ def _get_active_project_data(project_id: Optional[str] = None):
     disk_files = []
     
     for root, dirs, filenames in os.walk(root_dir):
-        # Exclude build/virtualenv dirs dynamically
-        dirs[:] = [d for d in dirs if d not in ['.git', 'node_modules', 'venv', 'dist', '__pycache__', '.pytest_cache']]
+        # Exclude build/virtualenv/cache dirs dynamically
+        dirs[:] = [d for d in dirs if d not in ['.git', 'node_modules', 'venv', '.venv', 'env', '.env', 'dist', 'build', '__pycache__', '.pytest_cache', 'site-packages']]
+        if any(ignored in root.replace('\\', '/').split('/') for ignored in ['.venv', 'venv', 'site-packages', 'node_modules']):
+            continue
         for fname in filenames:
             if fname.endswith(('.py', '.ts', '.tsx', '.js', '.jsx', '.json', '.md', '.sql', '.yaml', '.html', '.css')):
                 abs_p = os.path.join(root, fname)

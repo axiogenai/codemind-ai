@@ -36,6 +36,19 @@ export const KnowledgeGraphViewer: React.FC<KnowledgeGraphViewerProps> = ({
   const flowTransformRef = useRef<d3.ZoomTransform>(d3.zoomIdentity);
   const animationFrameRef = useRef<number | null>(null);
 
+  const [contextMenu, setContextMenu] = useState<{
+    x: number;
+    y: number;
+    node: GraphNode;
+  } | null>(null);
+
+  // Close context menu on global window click
+  useEffect(() => {
+    const handleGlobalClick = () => setContextMenu(null);
+    window.addEventListener('click', handleGlobalClick);
+    return () => window.removeEventListener('click', handleGlobalClick);
+  }, []);
+
   // Compute node type count distribution
   const typeCounts = useMemo(() => {
     const counts: Record<string, number> = { File: 0, Class: 0, Function: 0, API: 0, DatabaseTable: 0 };
@@ -328,6 +341,34 @@ export const KnowledgeGraphViewer: React.FC<KnowledgeGraphViewerProps> = ({
       if (found && onNodeClick) onNodeClick(found);
     };
 
+    const handleContextMenu = (e: MouseEvent) => {
+      e.preventDefault();
+      const rect = canvas.getBoundingClientRect();
+      const clickX = (e.clientX - rect.left - transformRef.current.x) / transformRef.current.k;
+      const clickY = (e.clientY - rect.top - transformRef.current.y) / transformRef.current.k;
+      
+      let found: GraphNode | null = null;
+      for (const node of filteredNodes as any[]) {
+        const dx = node.x - clickX;
+        const dy = node.y - clickY;
+        if (dx * dx + dy * dy < 160) {
+          found = node;
+          break;
+        }
+      }
+
+      if (found) {
+        setSelectedNode(found);
+        setContextMenu({
+          x: e.clientX - rect.left,
+          y: e.clientY - rect.top,
+          node: found
+        });
+      } else {
+        setContextMenu(null);
+      }
+    };
+
     const handleMouseLeave = () => {
       setHoveredNode(null);
       setDwellHighlightNode(null);
@@ -336,6 +377,7 @@ export const KnowledgeGraphViewer: React.FC<KnowledgeGraphViewerProps> = ({
 
     canvas.addEventListener('mousemove', handleMouseMove);
     canvas.addEventListener('click', handleClick);
+    canvas.addEventListener('contextmenu', handleContextMenu);
     canvas.addEventListener('mouseleave', handleMouseLeave);
 
     return () => {
@@ -343,6 +385,7 @@ export const KnowledgeGraphViewer: React.FC<KnowledgeGraphViewerProps> = ({
       if (animationFrameRef.current) cancelAnimationFrame(animationFrameRef.current);
       canvas.removeEventListener('mousemove', handleMouseMove);
       canvas.removeEventListener('click', handleClick);
+      canvas.removeEventListener('contextmenu', handleContextMenu);
       canvas.removeEventListener('mouseleave', handleMouseLeave);
       if (hoverTimerRef.current) clearTimeout(hoverTimerRef.current);
     };
@@ -531,9 +574,38 @@ export const KnowledgeGraphViewer: React.FC<KnowledgeGraphViewerProps> = ({
       drawFlow();
     };
 
+    const handleFlowContextMenu = (e: MouseEvent) => {
+      e.preventDefault();
+      const rect = canvas.getBoundingClientRect();
+      const clickX = (e.clientX - rect.left - flowTransformRef.current.x) / flowTransformRef.current.k;
+      const clickY = (e.clientY - rect.top - flowTransformRef.current.y) / flowTransformRef.current.k;
+
+      let found: GraphNode | null = null;
+      nodePositions.forEach(pos => {
+        const dx = pos.x - clickX;
+        const dy = pos.y - clickY;
+        if (dx * dx + dy * dy < 300 || (Math.abs(dy) < 16 && clickX >= pos.x && clickX <= pos.x + 220)) {
+          found = pos.node;
+        }
+      });
+
+      if (found) {
+        setSelectedNode(found);
+        setContextMenu({
+          x: e.clientX - rect.left,
+          y: e.clientY - rect.top,
+          node: found
+        });
+      } else {
+        setContextMenu(null);
+      }
+    };
+
     canvas.addEventListener('click', handleFlowClick);
+    canvas.addEventListener('contextmenu', handleFlowContextMenu);
     return () => {
       canvas.removeEventListener('click', handleFlowClick);
+      canvas.removeEventListener('contextmenu', handleFlowContextMenu);
     };
   }, [viewMode, filteredNodes, filteredLinks, selectedNode]);
 
@@ -569,15 +641,15 @@ export const KnowledgeGraphViewer: React.FC<KnowledgeGraphViewerProps> = ({
               placeholder="Search graph nodes..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="bg-gray-900/90 border border-gray-800 rounded-xl pl-9 pr-4 py-1.5 text-xs text-white placeholder-gray-500 outline-none focus:border-cyan-500 transition-all w-48"
+              className="bg-gray-900 border border-gray-800 rounded-xl pl-9 pr-4 py-2 text-xs text-white placeholder-gray-500 outline-none focus:border-cyan-500 transition-all w-52"
             />
           </div>
 
           {/* Model Switcher: Force Graph vs Layered Connection Flow */}
-          <div className="flex items-center space-x-1 bg-gray-900/90 border border-gray-800 p-1 rounded-xl">
+          <div className="flex items-center space-x-1 bg-gray-900 border border-gray-800 p-1 rounded-xl">
             <button
               onClick={() => setViewMode('FORCE_GRAPH')}
-              className={`px-3 py-1 rounded-lg text-xs font-bold flex items-center space-x-1.5 transition-all cursor-pointer ${
+              className={`px-3 py-1.5 rounded-lg text-xs font-bold flex items-center space-x-1.5 transition-all cursor-pointer ${
                 viewMode === 'FORCE_GRAPH'
                   ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 shadow-sm'
                   : 'text-gray-400 hover:text-white'
@@ -589,7 +661,7 @@ export const KnowledgeGraphViewer: React.FC<KnowledgeGraphViewerProps> = ({
 
             <button
               onClick={() => setViewMode('CONNECTION_FLOW')}
-              className={`px-3 py-1 rounded-lg text-xs font-bold flex items-center space-x-1.5 transition-all cursor-pointer ${
+              className={`px-3 py-1.5 rounded-lg text-xs font-bold flex items-center space-x-1.5 transition-all cursor-pointer ${
                 viewMode === 'CONNECTION_FLOW'
                   ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 shadow-sm'
                   : 'text-gray-400 hover:text-white'
@@ -610,11 +682,11 @@ export const KnowledgeGraphViewer: React.FC<KnowledgeGraphViewerProps> = ({
             }`}
           >
             <Cpu className="w-3.5 h-3.5 text-cyan-300" />
-            <span>{isGnnMode ? 'GNN Neural Active' : 'GNN Neural Mode'}</span>
+            <span>{isGnnMode ? 'GNN Neural Mode Active' : 'GNN Neural Mode'}</span>
           </button>
 
           {/* LOD Level Selector */}
-          <div className="flex items-center space-x-1 bg-gray-900/90 border border-gray-800 p-1 rounded-xl">
+          <div className="flex items-center space-x-1 bg-gray-900 border border-gray-800 p-1 rounded-xl">
             <span className="text-[10px] uppercase font-bold text-gray-500 px-2 flex items-center gap-1">
               <Layers className="w-3 h-3 text-cyan-400" /> LOD:
             </span>
@@ -637,7 +709,7 @@ export const KnowledgeGraphViewer: React.FC<KnowledgeGraphViewerProps> = ({
           </div>
 
           {/* Category Filter Badges */}
-          <div className="flex items-center space-x-1 bg-gray-900/90 border border-gray-800 p-1 rounded-xl">
+          <div className="flex items-center space-x-1 bg-gray-900 border border-gray-800 p-1 rounded-xl">
             {['ALL', 'File', 'Class', 'Function', 'API', 'DatabaseTable'].map((type) => (
               <button
                 key={type}
@@ -654,14 +726,14 @@ export const KnowledgeGraphViewer: React.FC<KnowledgeGraphViewerProps> = ({
 
         {/* Counts Legend */}
         <div className="flex items-center space-x-3 text-xs font-semibold text-gray-400">
-          <span className="text-cyan-400 font-bold bg-cyan-950/40 px-3 py-1 rounded-lg border border-cyan-500/30 flex items-center gap-1.5">
-            <Zap className="w-3.5 h-3.5 text-amber-400" />
+          <span className="text-cyan-400 font-bold bg-cyan-950/40 px-3 py-1 rounded-lg border border-cyan-500/30 flex items-center gap-1">
+            <Zap className="w-3 h-3 text-amber-400" />
             {totalNodesCount} Nodes
           </span>
-          <span className="flex items-center gap-1.5 text-emerald-400"><span className="w-2 h-2 rounded-full bg-emerald-400" /> {typeCounts.File} Files</span>
-          <span className="flex items-center gap-1.5 text-purple-400"><span className="w-2 h-2 rounded-full bg-purple-400" /> {typeCounts.Class} Classes</span>
-          <span className="flex items-center gap-1.5 text-pink-400"><span className="w-2 h-2 rounded-full bg-pink-400" /> {typeCounts.Function} Functions</span>
-          <span className="flex items-center gap-1.5 text-amber-400"><span className="w-2 h-2 rounded-full bg-amber-400" /> {typeCounts.API} APIs</span>
+          <span className="flex items-center gap-1 text-emerald-400"><span className="w-1.5 h-1.5 rounded-full bg-emerald-400" /> {typeCounts.File} Files</span>
+          <span className="flex items-center gap-1 text-purple-400"><span className="w-1.5 h-1.5 rounded-full bg-purple-400" /> {typeCounts.Class} Classes</span>
+          <span className="flex items-center gap-1 text-pink-400"><span className="w-1.5 h-1.5 rounded-full bg-pink-400" /> {typeCounts.Function} Functions</span>
+          <span className="flex items-center gap-1 text-amber-400"><span className="w-1.5 h-1.5 rounded-full bg-amber-400" /> {typeCounts.API} APIs</span>
         </div>
       </div>
 
@@ -697,7 +769,58 @@ export const KnowledgeGraphViewer: React.FC<KnowledgeGraphViewerProps> = ({
             {hoveredNode.file && (
               <p className="text-[10px] text-cyan-300 font-mono">{hoveredNode.file}</p>
             )}
-            <p className="text-[10px] text-gray-400">Click to inspect dependencies & run impact analysis</p>
+            <p className="text-[10px] text-gray-400">Right-click for Ask AI & Predict Impact (or click to open drawer)</p>
+          </div>
+        )}
+
+        {/* Right-Click Quick Action Context Menu */}
+        {contextMenu && (
+          <div
+            className="absolute z-40 bg-[#121212] border border-cyan-500/40 rounded-2xl p-2 shadow-2xl space-y-1 min-w-[200px] animate-in fade-in zoom-in-95 duration-100"
+            style={{
+              left: `${Math.min(contextMenu.x, (canvasRef.current?.parentElement?.clientWidth || 800) - 220)}px`,
+              top: `${Math.min(contextMenu.y, (canvasRef.current?.parentElement?.clientHeight || 600) - 160)}px`
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="px-3 py-1.5 border-b border-gray-800 flex items-center justify-between">
+              <span className="text-xs font-bold text-white truncate max-w-[120px] code-font">{contextMenu.node.label}</span>
+              <span className={`text-[9px] font-extrabold px-1.5 py-0.5 rounded uppercase badge-${contextMenu.node.type.toLowerCase()}`}>
+                {contextMenu.node.type}
+              </span>
+            </div>
+
+            <button
+              onClick={() => {
+                const targetName = contextMenu.node.label || contextMenu.node.id;
+                const targetFile = contextMenu.node.file || targetName;
+                setContextMenu(null);
+                if (onAskAI) {
+                  onAskAI({ label: targetName, file: targetFile, type: contextMenu.node.type });
+                } else if (onNavigateTab) {
+                  onNavigateTab('chat');
+                }
+              }}
+              className="w-full text-left px-3 py-2 rounded-xl text-xs font-bold text-cyan-300 hover:bg-cyan-500/20 hover:text-white flex items-center space-x-2 transition-all cursor-pointer"
+            >
+              <Zap className="w-3.5 h-3.5 text-cyan-400" />
+              <span>Ask AI About Symbol</span>
+            </button>
+
+            {onSelectImpactTarget && onNavigateTab && (
+              <button
+                onClick={() => {
+                  const targetName = contextMenu.node.file || contextMenu.node.label;
+                  setContextMenu(null);
+                  onSelectImpactTarget(targetName);
+                  onNavigateTab('impact');
+                }}
+                className="w-full text-left px-3 py-2 rounded-xl text-xs font-bold text-amber-300 hover:bg-amber-500/20 hover:text-white flex items-center space-x-2 transition-all cursor-pointer"
+              >
+                <GitPullRequest className="w-3.5 h-3.5 text-amber-400" />
+                <span>Predict Change Impact</span>
+              </button>
+            )}
           </div>
         )}
 
