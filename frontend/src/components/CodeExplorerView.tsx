@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { FileCode, Cpu, FolderTree, Code2, Layers, Network, Save, RotateCcw, Copy, Check, FileEdit, Eye, AlignLeft, Sparkles } from 'lucide-react';
-import Editor, { type OnMount } from '@monaco-editor/react';
+import { FileCode, Cpu, FolderTree, Code2, Layers, Network, Save, RotateCcw, Copy, Check, FileEdit, Eye, AlignLeft } from 'lucide-react';
+import Editor, { type OnMount, type BeforeMount } from '@monaco-editor/react';
 import type { ProjectFile } from '../types';
 import { saveFileContent } from '../services/api';
 
@@ -74,6 +74,28 @@ export const CodeExplorerView: React.FC<CodeExplorerViewProps> = ({ files, proje
       setSavedSuccess(false);
     }
   }, [selectedFile?.path]);
+
+  const handleBeforeMount: BeforeMount = (monaco) => {
+    monaco.editor.defineTheme('codemind-matte-black', {
+      base: 'vs-dark',
+      inherit: true,
+      rules: [
+        { token: '', background: '0A0A0A' },
+      ],
+      colors: {
+        'editor.background': '#0A0A0A',
+        'editorGutter.background': '#0A0A0A',
+        'editorLineNumber.foreground': '#52525B',
+        'editorLineNumber.activeForeground': '#E2E8F0',
+        'editor.lineHighlightBackground': '#141416',
+        'editorCursor.foreground': '#E2E8F0',
+        'editorWhitespace.foreground': '#27272A',
+        'editorIndentGuide.background': '#18181B',
+        'editorIndentGuide.activeBackground': '#27272A',
+        'minimap.background': '#0A0A0A',
+      }
+    });
+  };
 
   const handleEditorMount: OnMount = (editor) => {
     editorRef.current = editor;
@@ -188,13 +210,13 @@ export const CodeExplorerView: React.FC<CodeExplorerViewProps> = ({ files, proje
       {/* Main Code & AST Inspector */}
       {selectedFile && (
         <div className="flex-1 grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* VS Code Studio Editor Panel */}
-          <div className="lg:col-span-2 bg-[#0D0E11] border border-white/[0.08] rounded-xl flex flex-col shadow-xl overflow-hidden">
+          {/* VS Code Studio Editor Panel - Matte Black Edition */}
+          <div className="lg:col-span-2 bg-[#0A0A0A] border border-white/[0.08] rounded-xl flex flex-col shadow-xl overflow-hidden">
             {/* VS Code Editor Tab Header & Action Bar */}
-            <div className="bg-[#121316] px-4 py-2.5 border-b border-white/[0.08] flex items-center justify-between gap-3 select-none">
+            <div className="bg-[#0A0A0A] px-4 py-2.5 border-b border-white/[0.08] flex items-center justify-between gap-3 select-none">
               {/* Active Tab */}
               <div className="flex items-center space-x-2.5 min-w-0">
-                <div className="flex items-center space-x-2 px-3 py-1 rounded-md bg-[#1B1D22] border border-white/[0.08] text-xs font-mono">
+                <div className="flex items-center space-x-2 px-3 py-1 rounded-md bg-[#141414] border border-white/[0.08] text-xs font-mono">
                   <FileCode className={`w-3.5 h-3.5 ${getFileIconColor(selectedFile.path)}`} />
                   <span className="text-zinc-100 font-semibold truncate max-w-[220px]">
                     {selectedFile.path.split('/').pop()}
@@ -203,7 +225,7 @@ export const CodeExplorerView: React.FC<CodeExplorerViewProps> = ({ files, proje
                     <span className="w-2 h-2 rounded-full bg-amber-400 shadow-xs" title="Unsaved changes" />
                   )}
                 </div>
-                <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-[#18191D] text-zinc-400 border border-white/[0.04] hidden sm:inline-block">
+                <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-[#141414] text-zinc-400 border border-white/[0.04] hidden sm:inline-block">
                   {monacoLang.toUpperCase()}
                 </span>
               </div>
@@ -218,14 +240,14 @@ export const CodeExplorerView: React.FC<CodeExplorerViewProps> = ({ files, proje
                     savedSuccess
                       ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
                       : isDirty
-                      ? 'bg-indigo-600 hover:bg-indigo-500 text-white shadow-xs border border-indigo-400/40'
+                      ? 'bg-white/[0.12] hover:bg-white/[0.18] text-white border border-white/[0.2]'
                       : 'bg-white/[0.04] text-zinc-500 border border-white/[0.04] opacity-60 cursor-not-allowed'
                   }`}
                   title="Save (Ctrl+S)"
                 >
                   {savedSuccess ? <Check className="w-3.5 h-3.5" /> : <Save className="w-3.5 h-3.5" />}
                   <span>{savedSuccess ? 'Saved' : 'Save'}</span>
-                  <kbd className="hidden md:inline-block text-[9px] px-1 py-0.2 rounded bg-black/30 font-mono opacity-80">Ctrl+S</kbd>
+                  <kbd className="hidden md:inline-block text-[9px] px-1 py-0.2 rounded bg-black/40 font-mono opacity-80">Ctrl+S</kbd>
                 </button>
 
                 {/* Discard / Revert */}
@@ -240,20 +262,20 @@ export const CodeExplorerView: React.FC<CodeExplorerViewProps> = ({ files, proje
                   </button>
                 )}
 
-                {/* Format Document */}
+                {/* Format Document - Clean Code2 icon, NO SPARKLES */}
                 <button
                   onClick={handleFormat}
                   className="p-1.5 rounded-md hover:bg-white/[0.06] text-zinc-400 hover:text-zinc-200 transition-colors cursor-pointer"
                   title="Format Document (Shift+Alt+F)"
                 >
-                  <Sparkles className="w-3.5 h-3.5" />
+                  <Code2 className="w-3.5 h-3.5" />
                 </button>
 
                 {/* Word Wrap Toggle */}
                 <button
                   onClick={() => setWordWrap(!wordWrap)}
                   className={`p-1.5 rounded-md transition-colors cursor-pointer ${
-                    wordWrap ? 'bg-white/[0.08] text-indigo-400' : 'text-zinc-400 hover:text-zinc-200 hover:bg-white/[0.04]'
+                    wordWrap ? 'bg-white/[0.08] text-zinc-200' : 'text-zinc-400 hover:text-zinc-200 hover:bg-white/[0.04]'
                   }`}
                   title={wordWrap ? 'Word Wrap Enabled (Alt+Z)' : 'Word Wrap Disabled (Alt+Z)'}
                 >
@@ -285,13 +307,14 @@ export const CodeExplorerView: React.FC<CodeExplorerViewProps> = ({ files, proje
               </div>
             </div>
 
-            {/* Monaco Editor Container */}
-            <div className="flex-1 w-full min-h-[420px] bg-[#1E1E1E]">
+            {/* Monaco Editor Container - Matte Black */}
+            <div className="flex-1 w-full min-h-[420px] bg-[#0A0A0A]">
               <Editor
                 height="100%"
                 language={monacoLang}
                 value={editorCode}
-                theme="vs-dark"
+                theme="codemind-matte-black"
+                beforeMount={handleBeforeMount}
                 onChange={handleCodeChange}
                 onMount={handleEditorMount}
                 options={{
@@ -320,16 +343,22 @@ export const CodeExplorerView: React.FC<CodeExplorerViewProps> = ({ files, proje
               />
             </div>
 
-            {/* VS Code Status Bar */}
-            <div className="bg-[#007ACC] text-white px-3 py-1 flex items-center justify-between text-[11px] font-mono select-none">
-              <div className="flex items-center space-x-4">
-                <span>Ln {cursorPos.line}, Col {cursorPos.col}</span>
+            {/* VS Code Status Bar - Matte Black Edition */}
+            <div className="bg-[#0A0A0A] border-t border-white/[0.08] text-zinc-400 px-3.5 py-1.5 flex items-center justify-between text-[11px] font-mono select-none">
+              <div className="flex items-center space-x-3">
+                <span className="text-zinc-300">Ln {cursorPos.line}, Col {cursorPos.col}</span>
+                <span className="text-zinc-600">|</span>
                 <span>Spaces: 2</span>
+                <span className="text-zinc-600">|</span>
                 <span>UTF-8</span>
               </div>
-              <div className="flex items-center space-x-4">
-                <span>{isDirty ? '● Unsaved Changes' : '✓ Saved'}</span>
-                <span className="font-semibold uppercase tracking-wider">{monacoLang}</span>
+              <div className="flex items-center space-x-3">
+                <span className={`flex items-center gap-1.5 ${isDirty ? 'text-amber-400' : 'text-zinc-300'}`}>
+                  {isDirty ? <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" /> : <Check className="w-3 h-3 text-emerald-400" />}
+                  <span>{isDirty ? 'Unsaved' : 'Saved'}</span>
+                </span>
+                <span className="text-zinc-600">|</span>
+                <span className="font-semibold text-zinc-300 uppercase tracking-wider">{monacoLang}</span>
               </div>
             </div>
           </div>

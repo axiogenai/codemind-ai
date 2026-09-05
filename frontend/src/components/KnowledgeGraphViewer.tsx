@@ -451,6 +451,17 @@ export const KnowledgeGraphViewer: React.FC<KnowledgeGraphViewerProps> = ({
     });
 
     // Build fast lookup for connected node IDs
+    const selectedConnectedNodeIds = new Set<string>();
+    if (selectedNode) {
+      selectedConnectedNodeIds.add(selectedNode.id);
+      filteredLinks.forEach(link => {
+        const sId = typeof link.source === 'object' ? (link.source as any).id : link.source;
+        const tId = typeof link.target === 'object' ? (link.target as any).id : link.target;
+        if (sId === selectedNode.id) selectedConnectedNodeIds.add(tId);
+        if (tId === selectedNode.id) selectedConnectedNodeIds.add(sId);
+      });
+    }
+
     const activeFocusNode = selectedNode || hoveredNode;
     const connectedNodeIds = new Set<string>();
     if (activeFocusNode) {
@@ -481,10 +492,19 @@ export const KnowledgeGraphViewer: React.FC<KnowledgeGraphViewerProps> = ({
 
       // Draw Column Header Plates
       activeCols.forEach((colKey, colIdx) => {
+        const colNodes = columns[colKey];
+        const visibleCount = selectedNode
+          ? colNodes.filter(n => selectedConnectedNodeIds.has(n.id)).length
+          : colNodes.length;
+
         const colX = sideMargin + colIdx * (cardWidth + colGap);
         const headerY = Math.max(30, visibleMinY + 45);
 
         ctx.save();
+        if (selectedNode && visibleCount === 0) {
+          ctx.globalAlpha = 0.2;
+        }
+
         ctx.fillStyle = '#141414';
         ctx.beginPath();
         ctx.roundRect(colX, headerY, cardWidth, 28, 8);
@@ -505,7 +525,7 @@ export const KnowledgeGraphViewer: React.FC<KnowledgeGraphViewerProps> = ({
 
         ctx.fillStyle = '#9CA3AF';
         ctx.font = '10px Inter, sans-serif';
-        const countText = `${columns[colKey].length}`;
+        const countText = selectedNode ? `${visibleCount} / ${colNodes.length}` : `${colNodes.length}`;
         const countWidth = ctx.measureText(countText).width;
         ctx.fillText(countText, colX + cardWidth - countWidth - 12, headerY + 18);
 
@@ -529,16 +549,22 @@ export const KnowledgeGraphViewer: React.FC<KnowledgeGraphViewerProps> = ({
         const tPos = nodePositions.get(tId);
 
         if (sPos && tPos) {
+          // When a node is selected, ONLY draw direct links to that node - all other lines disappear completely!
+          if (selectedNode) {
+            if (sId !== selectedNode.id && tId !== selectedNode.id) {
+              return;
+            }
+          } else if (hoveredNode) {
+            if (sId !== hoveredNode.id && tId !== hoveredNode.id) {
+              return;
+            }
+          }
+
           const sVis = sPos.y >= visibleMinY && sPos.y <= visibleMaxY;
           const tVis = tPos.y >= visibleMinY && tPos.y <= visibleMaxY;
 
           if (sVis || tVis) {
             const isRelevant = activeFocusNode && (activeFocusNode.id === sId || activeFocusNode.id === tId);
-
-            // When user focuses/hovers on a card, hide non-connected spaghetti lines completely
-            if (activeFocusNode && !isRelevant) {
-              return;
-            }
 
             const startX = sPos.x + cardWidth;
             const startY = sPos.y + cardHeight / 2;
@@ -552,11 +578,9 @@ export const KnowledgeGraphViewer: React.FC<KnowledgeGraphViewerProps> = ({
             ctx.bezierCurveTo(startX + deltaX, startY, endX - deltaX, endY, endX, endY);
 
             if (isRelevant) {
-              const beamColor = colorMap[sPos.node.type] || '#00F0FF';
+              const beamColor = colorMap[sPos.node.type] || '#E2E8F0';
               ctx.strokeStyle = beamColor;
               ctx.lineWidth = 2.4;
-              ctx.shadowColor = beamColor;
-              ctx.shadowBlur = 8;
             } else {
               ctx.strokeStyle = 'rgba(255, 255, 255, 0.08)';
               ctx.lineWidth = 0.9;
@@ -570,11 +594,18 @@ export const KnowledgeGraphViewer: React.FC<KnowledgeGraphViewerProps> = ({
 
       // Draw Node Cards (Clean modern rectangular chips)
       nodePositions.forEach(pos => {
+        // MANDATE: When one node is selected, others MUST DISAPPEAR and only connected ones should be visible!
+        if (selectedNode && !selectedConnectedNodeIds.has(pos.node.id)) {
+          return; // Completely disappear!
+        }
+
         if (pos.y >= visibleMinY && pos.y <= visibleMaxY && pos.x >= visibleMinX && pos.x <= visibleMaxX) {
           const isSelected = selectedNode?.id === pos.node.id;
           const isHovered = hoveredNode?.id === pos.node.id;
-          const isConnected = activeFocusNode && connectedNodeIds.has(pos.node.id);
-          const isDimmed = activeFocusNode && !isSelected && !isHovered && !isConnected;
+          const isConnected = selectedNode
+            ? selectedConnectedNodeIds.has(pos.node.id)
+            : (hoveredNode ? connectedNodeIds.has(pos.node.id) : false);
+          const isDimmed = !selectedNode && hoveredNode && !isHovered && !isConnected;
           const color = colorMap[pos.node.type] || '#10B981';
 
           ctx.save();
@@ -585,11 +616,11 @@ export const KnowledgeGraphViewer: React.FC<KnowledgeGraphViewerProps> = ({
           // Card container
           ctx.beginPath();
           ctx.roundRect(pos.x, pos.y, cardWidth, cardHeight, 8);
-          ctx.fillStyle = isSelected ? '#1A1A1A' : isHovered ? '#1E1E1E' : '#121212';
+          ctx.fillStyle = isSelected ? '#1A1A1A' : isHovered ? '#1A1A1A' : '#111113';
           ctx.fill();
 
           // Card border
-          ctx.strokeStyle = isSelected ? '#00F0FF' : isHovered ? color : isConnected ? `${color}88` : '#262626';
+          ctx.strokeStyle = isSelected ? '#FFFFFF' : isHovered ? '#E2E8F0' : isConnected ? `${color}99` : '#27272A';
           ctx.lineWidth = isSelected ? 1.8 : isHovered ? 1.4 : 1;
           ctx.stroke();
 
@@ -606,7 +637,7 @@ export const KnowledgeGraphViewer: React.FC<KnowledgeGraphViewerProps> = ({
           ctx.fill();
 
           // Node label text
-          ctx.fillStyle = isSelected ? '#FFFFFF' : isHovered ? '#FFFFFF' : '#D4D4D4';
+          ctx.fillStyle = isSelected ? '#FFFFFF' : isHovered ? '#FFFFFF' : '#E2E8F0';
           ctx.font = isSelected || isHovered ? 'bold 11px Inter, monospace' : '10.5px Inter, monospace';
           const maxChar = 22;
           const rawLabel = pos.node.label;
@@ -614,7 +645,7 @@ export const KnowledgeGraphViewer: React.FC<KnowledgeGraphViewerProps> = ({
           ctx.fillText(displayLabel, pos.x + 28, pos.y + cardHeight / 2 + 4);
 
           // Port dot on right edge
-          ctx.fillStyle = isConnected ? color : '#333333';
+          ctx.fillStyle = isConnected || isSelected ? color : '#333333';
           ctx.beginPath();
           ctx.arc(pos.x + cardWidth, pos.y + cardHeight / 2, 2.5, 0, 2 * Math.PI);
           ctx.fill();
@@ -655,6 +686,10 @@ export const KnowledgeGraphViewer: React.FC<KnowledgeGraphViewerProps> = ({
 
       let found: GraphNode | null = null;
       nodePositions.forEach(pos => {
+        // Disappeared/hidden nodes cannot be hit!
+        if (selectedNode && !selectedConnectedNodeIds.has(pos.node.id)) {
+          return;
+        }
         if (
           clickX >= pos.x &&
           clickX <= pos.x + cardWidth &&
@@ -676,10 +711,30 @@ export const KnowledgeGraphViewer: React.FC<KnowledgeGraphViewerProps> = ({
       }
     };
 
+    let mouseDownPos: { x: number; y: number } | null = null;
+
+    const handleFlowMouseDown = (e: MouseEvent) => {
+      mouseDownPos = { x: e.clientX, y: e.clientY };
+    };
+
     const handleFlowClick = (e: MouseEvent) => {
+      // If user dragged more than 6px, it's a pan gesture, not a click
+      if (mouseDownPos) {
+        const dist = Math.hypot(e.clientX - mouseDownPos.x, e.clientY - mouseDownPos.y);
+        if (dist > 6) return;
+      }
+
       const found = getNodeAtCoords(e);
-      setSelectedNode(found === selectedNode ? null : found);
-      if (found && onNodeClick) onNodeClick(found);
+      if (found) {
+        // Clicked on a node: toggle selection or select it
+        setSelectedNode(found.id === selectedNode?.id ? null : found);
+        if (found.id !== selectedNode?.id && onNodeClick) {
+          onNodeClick(found);
+        }
+      } else {
+        // Clicked aside on empty canvas: deselect and restore visibility of everything!
+        setSelectedNode(null);
+      }
       drawFlow();
     };
 
@@ -706,12 +761,14 @@ export const KnowledgeGraphViewer: React.FC<KnowledgeGraphViewerProps> = ({
       drawFlow();
     };
 
+    canvas.addEventListener('mousedown', handleFlowMouseDown);
     canvas.addEventListener('mousemove', handleFlowMouseMove);
     canvas.addEventListener('click', handleFlowClick);
     canvas.addEventListener('contextmenu', handleFlowContextMenu);
     canvas.addEventListener('mouseleave', handleFlowMouseLeave);
 
     return () => {
+      canvas.removeEventListener('mousedown', handleFlowMouseDown);
       canvas.removeEventListener('mousemove', handleFlowMouseMove);
       canvas.removeEventListener('click', handleFlowClick);
       canvas.removeEventListener('contextmenu', handleFlowContextMenu);
@@ -939,11 +996,35 @@ export const KnowledgeGraphViewer: React.FC<KnowledgeGraphViewerProps> = ({
 
         {/* Model 2: Virtualized High-Scale Layered Flow Canvas */}
         {viewMode === 'CONNECTION_FLOW' && (
-          <div className="w-full h-full relative overflow-hidden">
+          <div 
+            className="w-full h-full relative overflow-hidden"
+            onClick={(e) => {
+              if (e.target === e.currentTarget) {
+                setSelectedNode(null);
+              }
+            }}
+          >
             <canvas ref={flowCanvasRef} className="w-full h-full bg-[#0A0A0A] cursor-grab active:cursor-grabbing" />
-            <div className="absolute top-4 left-4 p-2.5 rounded-xl bg-[#141414]/90 border border-neutral-800 text-[11px] text-neutral-300 pointer-events-none flex items-center space-x-2 shadow-lg">
-              <span className="w-2 h-2 rounded-full bg-cyan-400" />
-              <span><strong className="text-white">Clean Architecture Flow</strong>: Hover or click any card to illuminate its connections.</span>
+            <div className="absolute top-4 left-4 p-2.5 rounded-xl bg-[#141414]/90 border border-neutral-800 text-[11px] text-neutral-300 flex items-center space-x-2.5 shadow-lg select-none">
+              <span className={`w-2 h-2 rounded-full ${selectedNode ? 'bg-amber-400 animate-pulse' : 'bg-zinc-400'}`} />
+              {selectedNode ? (
+                <div className="flex items-center gap-2">
+                  <span>
+                    Isolated: <strong className="text-white font-mono">{selectedNode.label}</strong> ({selectedNodeNeighbors.length} connected items visible)
+                  </span>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setSelectedNode(null);
+                    }}
+                    className="ml-2 px-2.5 py-0.5 rounded bg-white/[0.08] hover:bg-white/[0.16] text-zinc-200 text-[10px] font-mono border border-white/[0.1] transition-colors cursor-pointer"
+                  >
+                    Click aside to show all
+                  </button>
+                </div>
+              ) : (
+                <span><strong className="text-white">Connection Flow</strong>: Click any card to isolate its connections. Click aside to show all.</span>
+              )}
             </div>
           </div>
         )}

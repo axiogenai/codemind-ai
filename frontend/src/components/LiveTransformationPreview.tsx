@@ -262,7 +262,6 @@ export const LiveTransformationPreview: React.FC<Props> = ({ preview, plan, proj
     const Check = createIconStub('Check');
     const Sun = createIconStub('Sun');
     const Moon = createIconStub('Moon');
-    const Sparkles = createIconStub('Sparkles');
 
     try {
       let cleaned = rawSource
