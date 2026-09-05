@@ -189,58 +189,51 @@ export const ArchitectureDiagrams: React.FC<ArchitectureDiagramsProps> = ({ file
 
   return (
     <div className="h-[calc(100vh-4rem)] p-6 space-y-6 flex flex-col">
-      {/* Selector Header */}
-      <div className="glass-panel p-4 rounded-2xl flex items-center justify-between">
-        <div>
-          <h3 className="text-base font-extrabold text-white">Dynamic Architecture Diagrams</h3>
-          <p className="text-xs text-gray-400">Generated dynamically from your codebase's Universal AST & Knowledge Graph</p>
+      {/* Selector Header: Studio-Grade Precision Control Bar */}
+      <div className="bg-[#0D0E11] border border-white/[0.08] rounded-xl p-3.5 shadow-xl flex flex-wrap items-center justify-between gap-4">
+        <div className="flex items-center gap-3">
+          <div className="w-8 h-8 rounded-lg bg-[#151619] border border-white/[0.08] flex items-center justify-center text-cyan-400 shadow-inner">
+            <Layers className="w-4 h-4" />
+          </div>
+          <div>
+            <h3 className="text-sm font-semibold text-white tracking-tight">Dynamic Architecture Diagrams</h3>
+            <p className="text-xs text-zinc-400 font-normal">Generated dynamically from your codebase's Universal AST & Knowledge Graph</p>
+          </div>
         </div>
 
-        <div className="flex items-center space-x-2 bg-gray-900/90 border border-gray-800 p-1.5 rounded-xl">
-          <button
-            onClick={() => setActiveDiagram('component')}
-            className={`flex items-center space-x-2 px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all ${
-              activeDiagram === 'component' ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40' : 'text-gray-400'
-            }`}
-          >
-            <Layers className="w-4 h-4" />
-            <span>Component Topology</span>
-          </button>
-
-          <button
-            onClick={() => setActiveDiagram('class')}
-            className={`flex items-center space-x-2 px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all ${
-              activeDiagram === 'class' ? 'bg-purple-500/20 text-purple-300 border border-purple-500/40' : 'text-gray-400'
-            }`}
-          >
-            <GitGraph className="w-4 h-4" />
-            <span>Class Hierarchy</span>
-          </button>
-
-          <button
-            onClick={() => setActiveDiagram('sequence')}
-            className={`flex items-center space-x-2 px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all ${
-              activeDiagram === 'sequence' ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40' : 'text-gray-400'
-            }`}
-          >
-            <Workflow className="w-4 h-4" />
-            <span>API Sequence Flow</span>
-          </button>
-
-          <button
-            onClick={() => setActiveDiagram('erd')}
-            className={`flex items-center space-x-2 px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all ${
-              activeDiagram === 'erd' ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40' : 'text-gray-400'
-            }`}
-          >
-            <Database className="w-4 h-4" />
-            <span>Database ERD</span>
-          </button>
+        {/* Precision Segmented Tab Control */}
+        <div className="inline-flex items-center p-0.5 bg-[#151619] border border-white/[0.06] rounded-lg">
+          {[
+            { id: 'component', label: 'Component Topology', icon: Layers, color: '#38BDF8' },
+            { id: 'class', label: 'Class Hierarchy', icon: GitGraph, color: '#C084FC' },
+            { id: 'sequence', label: 'API Sequence Flow', icon: Workflow, color: '#FBBF24' },
+            { id: 'erd', label: 'Database ERD', icon: Database, color: '#34D399' }
+          ].map((tab) => {
+            const isActive = activeDiagram === tab.id;
+            const Icon = tab.icon;
+            return (
+              <button
+                key={tab.id}
+                onClick={() => setActiveDiagram(tab.id as any)}
+                className={`px-3.5 py-1.5 rounded-md text-xs font-medium flex items-center gap-2 transition-all cursor-pointer select-none ${
+                  isActive
+                    ? 'bg-[#24262B] text-zinc-100 shadow-xs border border-white/[0.08]'
+                    : 'text-zinc-400 hover:text-zinc-200 hover:bg-white/[0.03] border border-transparent'
+                }`}
+              >
+                <Icon
+                  className="w-3.5 h-3.5 transition-colors"
+                  style={{ color: isActive ? tab.color : undefined }}
+                />
+                <span>{tab.label}</span>
+              </button>
+            );
+          })}
         </div>
       </div>
 
       {/* Main Diagram Area */}
-      <div className="flex-1 glass-panel rounded-2xl p-8 flex items-center justify-center border border-gray-800/80 overflow-auto">
+      <div className="flex-1 bg-[#0A0A0A] rounded-xl p-8 flex items-center justify-center border border-white/[0.08] overflow-auto shadow-inner">
         <div className="flex justify-center items-center w-full" dangerouslySetInnerHTML={{ __html: svgContent }} />
       </div>
     </div>

@@ -152,10 +152,11 @@ export const TransformationEngineView: React.FC<Props> = ({ projectId, projectFi
             <RefreshCw className="w-6 h-6 text-white" />
           </div>
           <div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2.5">
               <h2 className="text-xl font-black text-white">Repository Transformation Engine</h2>
-              <span className="text-[10px] font-extrabold uppercase px-2 py-0.5 rounded bg-emerald-950/60 border border-emerald-800 text-emerald-400">
-                UNIVERSAL SYNTHESIS ACTIVE
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-medium bg-[#141518] text-zinc-300 border border-white/[0.08] shadow-xs">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 shadow-[0_0_6px_rgba(52,211,153,0.5)]" />
+                <span>Universal Synthesis Active</span>
               </span>
             </div>
             <p className="text-xs text-neutral-400">Synthesize new features, pages, components, APIs, and refactor code with AST precision and 100% snapshot rollbacks.</p>

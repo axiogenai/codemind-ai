@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState, useMemo } from 'react';
 import * as d3 from 'd3';
 import type { KnowledgeGraphData, GraphNode } from '../types';
-import { Search, Zap, Layers, GitPullRequest, Cpu, Network, GitMerge } from 'lucide-react';
+import { Search, Zap, Layers, GitPullRequest, Cpu, Network, GitMerge, SlidersHorizontal, X } from 'lucide-react';
 import type { ActiveTab } from './Sidebar';
 
 interface KnowledgeGraphViewerProps {
@@ -391,7 +391,7 @@ export const KnowledgeGraphViewer: React.FC<KnowledgeGraphViewerProps> = ({
     };
   }, [viewMode, filteredNodes, filteredLinks, selectedNode, dwellHighlightNode, isGnnMode]);
 
-  // --- MODEL 2: Virtualized High-Scale Connection Flow Engine (Zero Lag for 100k Nodes) ---
+  // --- MODEL 2: Virtualized High-Scale Connection Flow Engine (Clean Architecture Flow) ---
   useEffect(() => {
     if (viewMode !== 'CONNECTION_FLOW' || !flowCanvasRef.current || filteredNodes.length === 0) return;
 
@@ -399,7 +399,7 @@ export const KnowledgeGraphViewer: React.FC<KnowledgeGraphViewerProps> = ({
     const ctx = canvas.getContext('2d', { alpha: false });
     if (!ctx) return;
 
-    const width = canvas.parentElement?.clientWidth || 900;
+    const width = canvas.parentElement?.clientWidth || 1000;
     const height = canvas.parentElement?.clientHeight || 650;
     const dpr = Math.min(window.devicePixelRatio || 1, 2);
     canvas.width = width * dpr;
@@ -423,25 +423,45 @@ export const KnowledgeGraphViewer: React.FC<KnowledgeGraphViewerProps> = ({
 
     const colKeys = ['Files', 'Classes', 'Functions', 'APIs'];
     const activeCols = colKeys.filter(k => columns[k].length > 0);
-    const colWidth = (width - 160) / Math.max(1, activeCols.length - 1 || 1);
 
-    // Dynamic, comfortable row height with spacious separation (no squishing)
-    const rowHeight = 34;
+    // Spacious, uncluttered column geometry
+    const colCount = Math.max(1, activeCols.length);
+    const cardWidth = 260;
+    const cardHeight = 36;
+    const rowHeight = 48;
+    const colGap = 260; // Huge 260px horizontal breathing room between columns!
+    const sideMargin = 80;
+
+    const totalFlowWidth = sideMargin * 2 + colCount * cardWidth + (colCount - 1) * colGap;
+
     const nodePositions = new Map<string, { x: number; y: number; node: GraphNode }>();
 
     activeCols.forEach((colKey, colIdx) => {
       const colNodes = columns[colKey];
-      const x = 90 + colIdx * colWidth;
-      const startY = 80;
+      const colX = sideMargin + colIdx * (cardWidth + colGap);
+      const startY = 100;
 
       colNodes.forEach((node, rowIdx) => {
         nodePositions.set(node.id, {
-          x,
+          x: colX,
           y: startY + rowIdx * rowHeight,
           node
         });
       });
     });
+
+    // Build fast lookup for connected node IDs
+    const activeFocusNode = selectedNode || hoveredNode;
+    const connectedNodeIds = new Set<string>();
+    if (activeFocusNode) {
+      connectedNodeIds.add(activeFocusNode.id);
+      filteredLinks.forEach(link => {
+        const sId = typeof link.source === 'object' ? (link.source as any).id : link.source;
+        const tId = typeof link.target === 'object' ? (link.target as any).id : link.target;
+        if (sId === activeFocusNode.id) connectedNodeIds.add(tId);
+        if (tId === activeFocusNode.id) connectedNodeIds.add(sId);
+      });
+    }
 
     const drawFlow = () => {
       ctx.fillStyle = '#0A0A0A';
@@ -453,57 +473,46 @@ export const KnowledgeGraphViewer: React.FC<KnowledgeGraphViewerProps> = ({
       ctx.scale(t.k, t.k);
 
       // Virtualized Viewport Range in World Coordinates
-      const margin = 100;
+      const margin = 120;
       const visibleMinY = -t.y / t.k - margin;
       const visibleMaxY = (height - t.y) / t.k + margin;
       const visibleMinX = -t.x / t.k - margin;
       const visibleMaxX = (width - t.x) / t.k + margin;
 
-      // Draw Sticky Column Headers
+      // Draw Column Header Plates
       activeCols.forEach((colKey, colIdx) => {
-        const x = 90 + colIdx * colWidth;
+        const colX = sideMargin + colIdx * (cardWidth + colGap);
+        const headerY = Math.max(30, visibleMinY + 45);
+
         ctx.save();
+        ctx.fillStyle = '#141414';
+        ctx.beginPath();
+        ctx.roundRect(colX, headerY, cardWidth, 28, 8);
+        ctx.fill();
+        ctx.strokeStyle = '#262626';
+        ctx.lineWidth = 1;
+        ctx.stroke();
+
+        const colColor = colKey === 'Files' ? '#10B981' : colKey === 'Classes' ? '#8B5CF6' : colKey === 'Functions' ? '#EC4899' : '#F59E0B';
+        ctx.fillStyle = colColor;
+        ctx.beginPath();
+        ctx.arc(colX + 14, headerY + 14, 4, 0, 2 * Math.PI);
+        ctx.fill();
+
+        ctx.fillStyle = '#FFFFFF';
+        ctx.font = 'bold 11px Inter, sans-serif';
+        ctx.fillText(colKey.toUpperCase(), colX + 26, headerY + 18);
+
         ctx.fillStyle = '#9CA3AF';
-        ctx.font = 'bold 12px Inter, sans-serif';
-        ctx.fillText(`${colKey.toUpperCase()} (${columns[colKey].length})`, x - 30, Math.max(50, visibleMinY + 60));
+        ctx.font = '10px Inter, sans-serif';
+        const countText = `${columns[colKey].length}`;
+        const countWidth = ctx.measureText(countText).width;
+        ctx.fillText(countText, colX + cardWidth - countWidth - 12, headerY + 18);
+
         ctx.restore();
       });
 
-      // Draw Curved Connection Beams (Virtualized)
-      filteredLinks.forEach(link => {
-        const sId = typeof link.source === 'object' ? (link.source as any).id : link.source;
-        const tId = typeof link.target === 'object' ? (link.target as any).id : link.target;
-        const sPos = nodePositions.get(sId);
-        const tPos = nodePositions.get(tId);
-
-        if (sPos && tPos) {
-          // Virtual culling: only draw link if either endpoint is visible
-          const sVis = sPos.y >= visibleMinY && sPos.y <= visibleMaxY;
-          const tVis = tPos.y >= visibleMinY && tPos.y <= visibleMaxY;
-
-          if (sVis || tVis) {
-            const isSelected = selectedNode && (selectedNode.id === sId || selectedNode.id === tId);
-
-            ctx.save();
-            ctx.beginPath();
-            const midX = (sPos.x + tPos.x) / 2;
-            ctx.moveTo(sPos.x, sPos.y);
-            ctx.bezierCurveTo(midX, sPos.y, midX, tPos.y, tPos.x, tPos.y);
-
-            if (selectedNode) {
-              ctx.strokeStyle = isSelected ? '#00F0FF' : 'rgba(75, 85, 99, 0.08)';
-              ctx.lineWidth = isSelected ? 2.5 : 0.8;
-            } else {
-              ctx.strokeStyle = 'rgba(56, 189, 248, 0.35)';
-              ctx.lineWidth = 1.2;
-            }
-            ctx.stroke();
-            ctx.restore();
-          }
-        }
-      });
-
-      // Draw Node Badges (Virtualized)
+      // Draw Curved Connection Links
       const colorMap: Record<string, string> = {
         Project: '#3B82F6',
         File: '#10B981',
@@ -513,37 +522,109 @@ export const KnowledgeGraphViewer: React.FC<KnowledgeGraphViewerProps> = ({
         DatabaseTable: '#06B6D4'
       };
 
+      filteredLinks.forEach(link => {
+        const sId = typeof link.source === 'object' ? (link.source as any).id : link.source;
+        const tId = typeof link.target === 'object' ? (link.target as any).id : link.target;
+        const sPos = nodePositions.get(sId);
+        const tPos = nodePositions.get(tId);
+
+        if (sPos && tPos) {
+          const sVis = sPos.y >= visibleMinY && sPos.y <= visibleMaxY;
+          const tVis = tPos.y >= visibleMinY && tPos.y <= visibleMaxY;
+
+          if (sVis || tVis) {
+            const isRelevant = activeFocusNode && (activeFocusNode.id === sId || activeFocusNode.id === tId);
+
+            // When user focuses/hovers on a card, hide non-connected spaghetti lines completely
+            if (activeFocusNode && !isRelevant) {
+              return;
+            }
+
+            const startX = sPos.x + cardWidth;
+            const startY = sPos.y + cardHeight / 2;
+            const endX = tPos.x;
+            const endY = tPos.y + cardHeight / 2;
+            const deltaX = Math.max(40, (endX - startX) * 0.5);
+
+            ctx.save();
+            ctx.beginPath();
+            ctx.moveTo(startX, startY);
+            ctx.bezierCurveTo(startX + deltaX, startY, endX - deltaX, endY, endX, endY);
+
+            if (isRelevant) {
+              const beamColor = colorMap[sPos.node.type] || '#00F0FF';
+              ctx.strokeStyle = beamColor;
+              ctx.lineWidth = 2.4;
+              ctx.shadowColor = beamColor;
+              ctx.shadowBlur = 8;
+            } else {
+              ctx.strokeStyle = 'rgba(255, 255, 255, 0.08)';
+              ctx.lineWidth = 0.9;
+            }
+
+            ctx.stroke();
+            ctx.restore();
+          }
+        }
+      });
+
+      // Draw Node Cards (Clean modern rectangular chips)
       nodePositions.forEach(pos => {
         if (pos.y >= visibleMinY && pos.y <= visibleMaxY && pos.x >= visibleMinX && pos.x <= visibleMaxX) {
           const isSelected = selectedNode?.id === pos.node.id;
+          const isHovered = hoveredNode?.id === pos.node.id;
+          const isConnected = activeFocusNode && connectedNodeIds.has(pos.node.id);
+          const isDimmed = activeFocusNode && !isSelected && !isHovered && !isConnected;
           const color = colorMap[pos.node.type] || '#10B981';
 
           ctx.save();
-          // Anchor Dot
-          ctx.fillStyle = isSelected ? '#00F0FF' : color;
-          ctx.beginPath();
-          ctx.arc(pos.x, pos.y, isSelected ? 6 : 4, 0, 2 * Math.PI);
-          ctx.fill();
-
-          if (isSelected) {
-            ctx.strokeStyle = '#FFFFFF';
-            ctx.lineWidth = 1.5;
-            ctx.stroke();
+          if (isDimmed) {
+            ctx.globalAlpha = 0.25;
           }
 
-          // Node Text with background pill for clean legibility
-          ctx.fillStyle = isSelected ? '#FFFFFF' : '#D1D5DB';
-          ctx.font = isSelected ? 'bold 11px monospace' : '10px monospace';
-          const labelText = pos.node.label.length > 28 ? pos.node.label.slice(0, 26) + '..' : pos.node.label;
-          ctx.fillText(labelText, pos.x + 12, pos.y + 3.5);
+          // Card container
+          ctx.beginPath();
+          ctx.roundRect(pos.x, pos.y, cardWidth, cardHeight, 8);
+          ctx.fillStyle = isSelected ? '#1A1A1A' : isHovered ? '#1E1E1E' : '#121212';
+          ctx.fill();
+
+          // Card border
+          ctx.strokeStyle = isSelected ? '#00F0FF' : isHovered ? color : isConnected ? `${color}88` : '#262626';
+          ctx.lineWidth = isSelected ? 1.8 : isHovered ? 1.4 : 1;
+          ctx.stroke();
+
+          // Type indicator pill on left edge
+          ctx.fillStyle = color;
+          ctx.beginPath();
+          ctx.roundRect(pos.x + 3, pos.y + 4, 3, cardHeight - 8, 2);
+          ctx.fill();
+
+          // Anchor pin dot
+          ctx.fillStyle = color;
+          ctx.beginPath();
+          ctx.arc(pos.x + 16, pos.y + cardHeight / 2, 3.5, 0, 2 * Math.PI);
+          ctx.fill();
+
+          // Node label text
+          ctx.fillStyle = isSelected ? '#FFFFFF' : isHovered ? '#FFFFFF' : '#D4D4D4';
+          ctx.font = isSelected || isHovered ? 'bold 11px Inter, monospace' : '10.5px Inter, monospace';
+          const maxChar = 22;
+          const rawLabel = pos.node.label;
+          const displayLabel = rawLabel.length > maxChar ? rawLabel.slice(0, maxChar - 2) + '..' : rawLabel;
+          ctx.fillText(displayLabel, pos.x + 28, pos.y + cardHeight / 2 + 4);
+
+          // Port dot on right edge
+          ctx.fillStyle = isConnected ? color : '#333333';
+          ctx.beginPath();
+          ctx.arc(pos.x + cardWidth, pos.y + cardHeight / 2, 2.5, 0, 2 * Math.PI);
+          ctx.fill();
+
           ctx.restore();
         }
       });
 
       ctx.restore();
     };
-
-    drawFlow();
 
     const zoomBehavior = d3.zoom<HTMLCanvasElement, unknown>()
       .scaleExtent([0.15, 4])
@@ -555,39 +636,57 @@ export const KnowledgeGraphViewer: React.FC<KnowledgeGraphViewerProps> = ({
     const d3FlowCanvas = d3.select(canvas);
     d3FlowCanvas.call(zoomBehavior);
 
-    const handleFlowClick = (e: MouseEvent) => {
+    // If transform is default identity, compute an optimal zoom and horizontal offset so the entire flow fills the canvas
+    if (flowTransformRef.current.k === 1 && flowTransformRef.current.x === 0 && flowTransformRef.current.y === 0) {
+      const fitScale = Math.min(1.0, Math.max(0.45, (width - 80) / Math.max(100, totalFlowWidth)));
+      const initialTransform = d3.zoomIdentity
+        .translate(Math.max(20, (width - totalFlowWidth * fitScale) / 2), 20)
+        .scale(fitScale);
+      flowTransformRef.current = initialTransform;
+      d3FlowCanvas.call(zoomBehavior.transform, initialTransform);
+    } else {
+      drawFlow();
+    }
+
+    const getNodeAtCoords = (e: MouseEvent): GraphNode | null => {
       const rect = canvas.getBoundingClientRect();
       const clickX = (e.clientX - rect.left - flowTransformRef.current.x) / flowTransformRef.current.k;
       const clickY = (e.clientY - rect.top - flowTransformRef.current.y) / flowTransformRef.current.k;
 
       let found: GraphNode | null = null;
       nodePositions.forEach(pos => {
-        const dx = pos.x - clickX;
-        const dy = pos.y - clickY;
-        if (dx * dx + dy * dy < 300 || (Math.abs(dy) < 16 && clickX >= pos.x && clickX <= pos.x + 220)) {
+        if (
+          clickX >= pos.x &&
+          clickX <= pos.x + cardWidth &&
+          clickY >= pos.y &&
+          clickY <= pos.y + cardHeight
+        ) {
           found = pos.node;
         }
       });
+      return found;
+    };
 
-      setSelectedNode(found);
+    const handleFlowMouseMove = (e: MouseEvent) => {
+      const found = getNodeAtCoords(e);
+      if (found !== hoveredNode) {
+        setHoveredNode(found);
+        canvas.style.cursor = found ? 'pointer' : 'grab';
+        drawFlow();
+      }
+    };
+
+    const handleFlowClick = (e: MouseEvent) => {
+      const found = getNodeAtCoords(e);
+      setSelectedNode(found === selectedNode ? null : found);
       if (found && onNodeClick) onNodeClick(found);
       drawFlow();
     };
 
     const handleFlowContextMenu = (e: MouseEvent) => {
       e.preventDefault();
+      const found = getNodeAtCoords(e);
       const rect = canvas.getBoundingClientRect();
-      const clickX = (e.clientX - rect.left - flowTransformRef.current.x) / flowTransformRef.current.k;
-      const clickY = (e.clientY - rect.top - flowTransformRef.current.y) / flowTransformRef.current.k;
-
-      let found: GraphNode | null = null;
-      nodePositions.forEach(pos => {
-        const dx = pos.x - clickX;
-        const dy = pos.y - clickY;
-        if (dx * dx + dy * dy < 300 || (Math.abs(dy) < 16 && clickX >= pos.x && clickX <= pos.x + 220)) {
-          found = pos.node;
-        }
-      });
 
       if (found) {
         setSelectedNode(found);
@@ -596,18 +695,29 @@ export const KnowledgeGraphViewer: React.FC<KnowledgeGraphViewerProps> = ({
           y: e.clientY - rect.top,
           node: found
         });
+        drawFlow();
       } else {
         setContextMenu(null);
       }
     };
 
+    const handleFlowMouseLeave = () => {
+      setHoveredNode(null);
+      drawFlow();
+    };
+
+    canvas.addEventListener('mousemove', handleFlowMouseMove);
     canvas.addEventListener('click', handleFlowClick);
     canvas.addEventListener('contextmenu', handleFlowContextMenu);
+    canvas.addEventListener('mouseleave', handleFlowMouseLeave);
+
     return () => {
+      canvas.removeEventListener('mousemove', handleFlowMouseMove);
       canvas.removeEventListener('click', handleFlowClick);
       canvas.removeEventListener('contextmenu', handleFlowContextMenu);
+      canvas.removeEventListener('mouseleave', handleFlowMouseLeave);
     };
-  }, [viewMode, filteredNodes, filteredLinks, selectedNode]);
+  }, [viewMode, filteredNodes, filteredLinks, selectedNode, hoveredNode]);
 
   // Selected node neighbors
   const selectedNodeNeighbors = useMemo(() => {
@@ -631,109 +741,192 @@ export const KnowledgeGraphViewer: React.FC<KnowledgeGraphViewerProps> = ({
 
   return (
     <div className="h-[calc(100vh-4rem)] flex flex-col p-6 space-y-4">
-      {/* Controls Toolbar */}
-      <div className="glass-panel p-4 rounded-2xl flex flex-wrap items-center justify-between gap-4">
-        <div className="flex flex-wrap items-center gap-3">
-          <div className="relative">
-            <Search className="w-4 h-4 text-gray-400 absolute left-3 top-2.5" />
-            <input
-              type="text"
-              placeholder="Search graph nodes..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="bg-gray-900 border border-gray-800 rounded-xl pl-9 pr-4 py-2 text-xs text-white placeholder-gray-500 outline-none focus:border-cyan-500 transition-all w-52"
-            />
-          </div>
+      {/* Controls Toolbar: Studio-Grade Precision Command Deck */}
+      <div className="bg-[#0D0E11] border border-white/[0.08] rounded-xl p-3 shadow-xl flex flex-col gap-2.5">
+        {/* Tier 1: Primary Controls & Engine Telemetry */}
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div className="flex flex-wrap items-center gap-2.5">
+            {/* Precision Search Input */}
+            <div className="relative flex items-center bg-[#151619] border border-white/[0.08] focus-within:border-zinc-500 focus-within:ring-1 focus-within:ring-zinc-600/40 rounded-lg px-2.5 h-8.5 w-60 transition-all">
+              <Search className="w-3.5 h-3.5 text-zinc-400 shrink-0" />
+              <input
+                type="text"
+                placeholder="Search graph nodes..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full bg-transparent border-none text-xs text-zinc-200 placeholder:text-zinc-500 outline-none pl-2 pr-1 font-normal"
+              />
+              {searchTerm ? (
+                <button
+                  onClick={() => setSearchTerm('')}
+                  className="text-zinc-500 hover:text-zinc-300 p-0.5 rounded transition-colors cursor-pointer"
+                  title="Clear search"
+                >
+                  <X className="w-3 h-3" />
+                </button>
+              ) : (
+                <kbd className="hidden sm:inline-flex items-center px-1.5 py-0.5 text-[9px] font-mono text-zinc-500 bg-white/[0.03] border border-white/[0.06] rounded">
+                  /
+                </kbd>
+              )}
+            </div>
 
-          {/* Model Switcher: Force Graph vs Layered Connection Flow */}
-          <div className="flex items-center space-x-1 bg-gray-900 border border-gray-800 p-1 rounded-xl">
-            <button
-              onClick={() => setViewMode('FORCE_GRAPH')}
-              className={`px-3 py-1.5 rounded-lg text-xs font-bold flex items-center space-x-1.5 transition-all cursor-pointer ${
-                viewMode === 'FORCE_GRAPH'
-                  ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 shadow-sm'
-                  : 'text-gray-400 hover:text-white'
-              }`}
-            >
-              <Network className="w-3.5 h-3.5" />
-              <span>Force Graph</span>
-            </button>
+            <div className="h-4 w-px bg-white/[0.08] hidden md:block" />
 
-            <button
-              onClick={() => setViewMode('CONNECTION_FLOW')}
-              className={`px-3 py-1.5 rounded-lg text-xs font-bold flex items-center space-x-1.5 transition-all cursor-pointer ${
-                viewMode === 'CONNECTION_FLOW'
-                  ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 shadow-sm'
-                  : 'text-gray-400 hover:text-white'
-              }`}
-            >
-              <GitMerge className="w-3.5 h-3.5 text-emerald-400" />
-              <span>Connection Flow (Zero Lag)</span>
-            </button>
-          </div>
-
-          {/* GNN Neural Mode Toggle */}
-          <button
-            onClick={() => setIsGnnMode(!isGnnMode)}
-            className={`px-3 py-1.5 rounded-xl text-xs font-extrabold flex items-center space-x-1.5 transition-all cursor-pointer ${
-              isGnnMode
-                ? 'bg-gradient-to-r from-purple-500 to-indigo-600 text-white shadow-lg shadow-purple-500/25 border border-purple-400/50 animate-pulse'
-                : 'bg-gray-900 border border-gray-800 text-gray-300 hover:text-white'
-            }`}
-          >
-            <Cpu className="w-3.5 h-3.5 text-cyan-300" />
-            <span>{isGnnMode ? 'GNN Neural Mode Active' : 'GNN Neural Mode'}</span>
-          </button>
-
-          {/* LOD Level Selector */}
-          <div className="flex items-center space-x-1 bg-gray-900 border border-gray-800 p-1 rounded-xl">
-            <span className="text-[10px] uppercase font-bold text-gray-500 px-2 flex items-center gap-1">
-              <Layers className="w-3 h-3 text-cyan-400" /> LOD:
-            </span>
-            <button
-              onClick={() => setViewLevel('FILES_ONLY')}
-              className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
-                viewLevel === 'FILES_ONLY' ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40' : 'text-gray-400 hover:text-gray-200'
-              }`}
-            >
-              Files & APIs
-            </button>
-            <button
-              onClick={() => setViewLevel('ALL_SYMBOLS')}
-              className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
-                viewLevel === 'ALL_SYMBOLS' ? 'bg-purple-500/20 text-purple-300 border border-purple-500/40' : 'text-gray-400 hover:text-gray-200'
-              }`}
-            >
-              All Symbols
-            </button>
-          </div>
-
-          {/* Category Filter Badges */}
-          <div className="flex items-center space-x-1 bg-gray-900 border border-gray-800 p-1 rounded-xl">
-            {['ALL', 'File', 'Class', 'Function', 'API', 'DatabaseTable'].map((type) => (
+            {/* Model Switcher: Force Graph vs Layered Connection Flow */}
+            <div className="inline-flex items-center p-0.5 bg-[#151619] border border-white/[0.06] rounded-lg">
               <button
-                key={type}
-                onClick={() => setFilterType(type)}
-                className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
-                  filterType === type ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40' : 'text-gray-400 hover:text-gray-200'
+                onClick={() => setViewMode('FORCE_GRAPH')}
+                className={`px-3 py-1.5 rounded-md text-xs font-medium flex items-center gap-1.5 transition-all cursor-pointer ${
+                  viewMode === 'FORCE_GRAPH'
+                    ? 'bg-[#24262B] text-zinc-100 shadow-xs border border-white/[0.08]'
+                    : 'text-zinc-400 hover:text-zinc-200 hover:bg-white/[0.03]'
                 }`}
               >
-                {type}
+                <Network className="w-3.5 h-3.5" />
+                <span>Force Graph</span>
               </button>
-            ))}
+
+              <button
+                onClick={() => setViewMode('CONNECTION_FLOW')}
+                className={`px-3 py-1.5 rounded-md text-xs font-medium flex items-center gap-1.5 transition-all cursor-pointer ${
+                  viewMode === 'CONNECTION_FLOW'
+                    ? 'bg-[#24262B] text-zinc-100 shadow-xs border border-white/[0.08]'
+                    : 'text-zinc-400 hover:text-zinc-200 hover:bg-white/[0.03]'
+                }`}
+              >
+                <GitMerge className="w-3.5 h-3.5 text-emerald-400" />
+                <span>Connection Flow</span>
+                <span className="text-[9px] font-mono tracking-wide uppercase px-1.5 py-0.5 rounded bg-emerald-950/70 text-emerald-400 border border-emerald-800/40 ml-1 font-semibold">
+                  Zero Lag
+                </span>
+              </button>
+            </div>
+
+            {/* GNN Neural Mode Toggle - Hardware Engine Architecture */}
+            <button
+              onClick={() => setIsGnnMode(!isGnnMode)}
+              className={`px-3 py-1.5 rounded-lg text-xs font-medium flex items-center gap-2 transition-all cursor-pointer ${
+                isGnnMode
+                  ? 'bg-[#18261F] text-emerald-300 border border-emerald-500/40 shadow-xs'
+                  : 'bg-[#151619] border border-white/[0.06] text-zinc-400 hover:text-zinc-200 hover:border-white/[0.12]'
+              }`}
+            >
+              {isGnnMode ? (
+                <span className="relative flex h-2 w-2">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-60" />
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-400" />
+                </span>
+              ) : (
+                <span className="h-2 w-2 rounded-full bg-zinc-600" />
+              )}
+              <Cpu className={`w-3.5 h-3.5 ${isGnnMode ? 'text-emerald-400' : 'text-zinc-400'}`} />
+              <span>{isGnnMode ? 'GNN Neural Engine Active' : 'GNN Neural Mode'}</span>
+            </button>
+
+            {/* LOD Level Selector */}
+            <div className="inline-flex items-center p-0.5 bg-[#151619] border border-white/[0.06] rounded-lg">
+              <span className="text-[10px] font-semibold text-zinc-500 uppercase tracking-wider px-2 flex items-center gap-1 select-none">
+                <Layers className="w-3 h-3 text-zinc-400" /> LOD
+              </span>
+              <button
+                onClick={() => setViewLevel('FILES_ONLY')}
+                className={`px-2.5 py-1 rounded-md text-xs font-medium transition-all cursor-pointer ${
+                  viewLevel === 'FILES_ONLY'
+                    ? 'bg-[#24262B] text-zinc-100 shadow-xs border border-white/[0.08]'
+                    : 'text-zinc-400 hover:text-zinc-200 hover:bg-white/[0.03]'
+                }`}
+              >
+                Files & APIs
+              </button>
+              <button
+                onClick={() => setViewLevel('ALL_SYMBOLS')}
+                className={`px-2.5 py-1 rounded-md text-xs font-medium transition-all cursor-pointer ${
+                  viewLevel === 'ALL_SYMBOLS'
+                    ? 'bg-[#24262B] text-zinc-100 shadow-xs border border-white/[0.08]'
+                    : 'text-zinc-400 hover:text-zinc-200 hover:bg-white/[0.03]'
+                }`}
+              >
+                All Symbols
+              </button>
+            </div>
+          </div>
+
+          {/* Counts Legend & Telemetry */}
+          <div className="flex items-center gap-3 bg-[#151619] border border-white/[0.06] rounded-lg px-3 py-1.5 text-xs font-mono text-zinc-400">
+            <span className="text-zinc-100 font-medium flex items-center gap-1.5 font-sans">
+              <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 shadow-[0_0_6px_rgba(6,182,212,0.6)]" />
+              <strong className="text-white font-semibold">{totalNodesCount}</strong> Nodes
+            </span>
+            <span className="w-px h-3 bg-white/[0.08]" />
+            <div className="hidden xl:flex items-center gap-3 text-[11px]">
+              <span className="flex items-center gap-1.5 text-zinc-400">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" /> {typeCounts.File} Files
+              </span>
+              <span className="flex items-center gap-1.5 text-zinc-400">
+                <span className="w-1.5 h-1.5 rounded-full bg-purple-400" /> {typeCounts.Class} Classes
+              </span>
+              <span className="flex items-center gap-1.5 text-zinc-400">
+                <span className="w-1.5 h-1.5 rounded-full bg-pink-400" /> {typeCounts.Function} Functions
+              </span>
+              <span className="flex items-center gap-1.5 text-zinc-400">
+                <span className="w-1.5 h-1.5 rounded-full bg-amber-400" /> {typeCounts.API} APIs
+              </span>
+            </div>
           </div>
         </div>
 
-        {/* Counts Legend */}
-        <div className="flex items-center space-x-3 text-xs font-semibold text-gray-400">
-          <span className="text-cyan-400 font-bold bg-cyan-950/40 px-3 py-1 rounded-lg border border-cyan-500/30 flex items-center gap-1">
-            <Zap className="w-3 h-3 text-amber-400" />
-            {totalNodesCount} Nodes
-          </span>
-          <span className="flex items-center gap-1 text-emerald-400"><span className="w-1.5 h-1.5 rounded-full bg-emerald-400" /> {typeCounts.File} Files</span>
-          <span className="flex items-center gap-1 text-purple-400"><span className="w-1.5 h-1.5 rounded-full bg-purple-400" /> {typeCounts.Class} Classes</span>
-          <span className="flex items-center gap-1 text-pink-400"><span className="w-1.5 h-1.5 rounded-full bg-pink-400" /> {typeCounts.Function} Functions</span>
-          <span className="flex items-center gap-1 text-amber-400"><span className="w-1.5 h-1.5 rounded-full bg-amber-400" /> {typeCounts.API} APIs</span>
+        {/* Tier 2: Entity Filter Bar */}
+        <div className="flex flex-wrap items-center justify-between gap-3 pt-2.5 border-t border-white/[0.05]">
+          <div className="flex flex-wrap items-center gap-1.5">
+            <div className="flex items-center gap-1.5 text-xs text-zinc-400 font-medium mr-1.5 select-none">
+              <SlidersHorizontal className="w-3.5 h-3.5 text-zinc-400" />
+              <span>Filter:</span>
+            </div>
+
+            {[
+              { id: 'ALL', label: 'All Entities', count: totalNodesCount, color: '#A1A1AA' },
+              { id: 'File', label: 'Files', count: typeCounts.File, color: '#10B981' },
+              { id: 'Class', label: 'Classes', count: typeCounts.Class, color: '#8B5CF6' },
+              { id: 'Function', label: 'Functions', count: typeCounts.Function, color: '#EC4899' },
+              { id: 'API', label: 'APIs', count: typeCounts.API, color: '#F59E0B' },
+              { id: 'DatabaseTable', label: 'Database Tables', count: typeCounts.DatabaseTable, color: '#06B6D4' }
+            ].map((item) => {
+              const isActive = filterType === item.id;
+              return (
+                <button
+                  key={item.id}
+                  onClick={() => setFilterType(item.id)}
+                  className={`px-2.5 py-1 rounded-md text-xs font-medium flex items-center gap-1.5 transition-all cursor-pointer ${
+                    isActive
+                      ? 'bg-zinc-800 text-zinc-100 border border-zinc-600/70 shadow-[0_1px_2px_rgba(0,0,0,0.5)]'
+                      : 'bg-[#151619]/60 hover:bg-[#1C1E23] border border-white/[0.04] hover:border-white/[0.08] text-zinc-400 hover:text-zinc-200'
+                  }`}
+                >
+                  <span
+                    className="w-1.5 h-1.5 rounded-full shrink-0"
+                    style={{ backgroundColor: item.color }}
+                  />
+                  <span>{item.label}</span>
+                  <span
+                    className={`text-[10px] font-mono px-1.5 py-0.2 rounded ${
+                      isActive ? 'bg-black/50 text-zinc-200' : 'bg-black/30 text-zinc-400'
+                    }`}
+                  >
+                    {item.count}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+
+          {/* Subtle Interaction Guide */}
+          <div className="hidden lg:flex items-center gap-1.5 text-[11px] text-zinc-500">
+            <span className="font-mono text-[9px] bg-white/[0.04] border border-white/[0.06] px-1.5 py-0.5 rounded text-zinc-400">
+              Right-Click
+            </span>
+            <span>on node for AI context & blast radius</span>
+          </div>
         </div>
       </div>
 
@@ -748,8 +941,9 @@ export const KnowledgeGraphViewer: React.FC<KnowledgeGraphViewerProps> = ({
         {viewMode === 'CONNECTION_FLOW' && (
           <div className="w-full h-full relative overflow-hidden">
             <canvas ref={flowCanvasRef} className="w-full h-full bg-[#0A0A0A] cursor-grab active:cursor-grabbing" />
-            <div className="absolute top-4 left-4 p-2.5 rounded-xl bg-gray-900/80 border border-gray-800 text-[11px] text-gray-300 pointer-events-none">
-              <span className="text-emerald-400 font-bold">Infinite Virtualized Flow</span>: Scroll & pan smoothly across 100k+ nodes with spacious row separation.
+            <div className="absolute top-4 left-4 p-2.5 rounded-xl bg-[#141414]/90 border border-neutral-800 text-[11px] text-neutral-300 pointer-events-none flex items-center space-x-2 shadow-lg">
+              <span className="w-2 h-2 rounded-full bg-cyan-400" />
+              <span><strong className="text-white">Clean Architecture Flow</strong>: Hover or click any card to illuminate its connections.</span>
             </div>
           </div>
         )}

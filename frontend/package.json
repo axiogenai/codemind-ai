@@ -10,17 +10,25 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@monaco-editor/react": "^4.7.0",
+    "@number-flow/react": "^0.6.2",
     "@tailwindcss/typography": "^0.5.20",
     "@tailwindcss/vite": "^4.3.3",
     "@types/canvas-confetti": "^1.9.0",
     "@types/d3": "^7.4.3",
+    "@visx/group": "^4.0.1-alpha.0",
+    "@visx/responsive": "^4.0.1-alpha.0",
+    "@visx/shape": "^4.0.1-alpha.0",
     "canvas-confetti": "^1.9.4",
+    "clsx": "^2.1.1",
     "d3": "^7.9.0",
     "lucide-react": "^1.27.0",
     "marked": "^18.0.11",
     "mermaid": "^11.16.0",
+    "motion": "^13.2.0",
     "react": "^19.2.7",
     "react-dom": "^19.2.7",
+    "tailwind-merge": "^3.6.0",
     "tailwindcss": "^4.3.3"
   },
   "devDependencies": {

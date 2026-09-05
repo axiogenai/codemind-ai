@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Send, Bot, User, RefreshCw, Copy, Check, Terminal, Sparkles } from 'lucide-react';
+import { Send, Bot, User, RefreshCw, Copy, Check, Terminal } from 'lucide-react';
 import { marked } from 'marked';
 import type { ChatMessage } from '../types';
 import { sendAIChat } from '../services/api';
@@ -147,21 +147,23 @@ export const AIChatConsole: React.FC<AIChatConsoleProps> = ({ projectId, selecte
   return (
     <div className="h-[calc(100vh-4rem)] p-6 flex flex-col space-y-4 bg-[#0A0A0A]">
       {/* Header Bar */}
-      <div className="p-4 rounded-2xl flex items-center justify-between border border-neutral-800 bg-[#121212]">
+      <div className="p-3.5 rounded-xl flex items-center justify-between border border-white/[0.08] bg-[#0D0E11] shadow-xl">
         <div className="flex items-center space-x-3">
-          <div className="p-2.5 rounded-xl bg-neutral-900 text-neutral-200 border border-neutral-800">
-            <RefreshCw className="w-5 h-5 text-neutral-200" />
+          <div className="p-2 rounded-lg bg-[#151619] text-zinc-300 border border-white/[0.08] shadow-inner">
+            <RefreshCw className="w-4 h-4 text-cyan-400" />
           </div>
           <div>
-            <h3 className="text-base font-black text-white flex items-center gap-2">
+            <h3 className="text-sm font-semibold text-white tracking-tight flex items-center gap-2">
               Context-Aware AI RAG Assistant
               {selectedSymbol && (
-                <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-cyan-500/20 text-cyan-300 border border-cyan-500/30">
-                  Target: {selectedSymbol.label}
+                <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-[11px] font-mono font-medium bg-[#151619] text-zinc-200 border border-white/[0.08] shadow-xs">
+                  <span className="w-1.5 h-1.5 rounded-full bg-cyan-400" />
+                  <span className="text-zinc-400 font-sans text-[10px]">Target:</span>
+                  <span className="text-cyan-300">{selectedSymbol.label}</span>
                 </span>
               )}
             </h3>
-            <p className="text-xs text-gray-400">Grounded in Universal AST, Vector Embeddings, and Cognitive Intelligence</p>
+            <p className="text-xs text-zinc-400 font-normal">Grounded in Universal AST, Vector Embeddings, and Cognitive Intelligence</p>
           </div>
         </div>
       </div>
@@ -175,7 +177,7 @@ export const AIChatConsole: React.FC<AIChatConsoleProps> = ({ projectId, selecte
             disabled={loading}
             className="px-3.5 py-1.5 rounded-xl bg-neutral-900/80 border border-neutral-800 hover:border-neutral-700 text-xs text-neutral-300 hover:text-white transition-all text-left flex items-center space-x-2 cursor-pointer disabled:opacity-50"
           >
-            <Sparkles className="w-3 h-3 text-neutral-400" />
+            <Terminal className="w-3 h-3 text-neutral-400" />
             <span>{prompt}</span>
           </button>
         ))}
@@ -207,8 +209,11 @@ export const AIChatConsole: React.FC<AIChatConsoleProps> = ({ projectId, selecte
                 </span>
                 <div className="flex items-center space-x-2">
                   {msg.confidence !== undefined && msg.confidence > 0 && (
-                    <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
-                      {msg.confidence}% Grounded Confidence
+                    <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-[10px] font-medium bg-[#141518] text-zinc-300 border border-white/[0.08] shadow-xs">
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+                      <span>
+                        <strong className="font-mono font-semibold text-zinc-100">{msg.confidence}%</strong> Grounded Confidence
+                      </span>
                     </span>
                   )}
                   <span>{msg.timestamp}</span>
@@ -222,14 +227,14 @@ export const AIChatConsole: React.FC<AIChatConsoleProps> = ({ projectId, selecte
                   prose-h1:text-base prose-h2:text-sm prose-h3:text-xs
                   prose-p:text-xs prose-p:leading-relaxed prose-p:text-neutral-200 prose-p:my-1.5
                   prose-strong:text-white prose-strong:font-extrabold
-                  prose-code:text-cyan-300 prose-code:bg-neutral-900 prose-code:px-1.5 prose-code:py-0.5 prose-code:rounded prose-code:text-[11px] prose-code:font-mono
+                  prose-code:text-indigo-300 prose-code:bg-[#14161F] prose-code:border prose-code:border-indigo-500/20 prose-code:px-1.5 prose-code:py-0.5 prose-code:rounded prose-code:text-[11px] prose-code:font-mono
                   prose-pre:bg-neutral-900 prose-pre:border prose-pre:border-neutral-800 prose-pre:rounded-xl prose-pre:p-3 prose-pre:text-[11px] prose-pre:overflow-x-auto
                   prose-li:text-xs prose-li:text-neutral-200 prose-li:my-0.5
                   prose-ul:my-1.5 prose-ol:my-1.5
                   prose-table:text-[11px] prose-th:bg-neutral-900 prose-th:px-3 prose-th:py-1.5 prose-th:text-left prose-th:font-bold prose-th:text-neutral-200 prose-th:border prose-th:border-neutral-800
                   prose-td:px-3 prose-td:py-1.5 prose-td:border prose-td:border-neutral-800 prose-td:text-neutral-300
-                  prose-blockquote:border-l-2 prose-blockquote:border-cyan-500 prose-blockquote:pl-3 prose-blockquote:text-neutral-400 prose-blockquote:italic
-                  prose-a:text-cyan-400 prose-a:no-underline hover:prose-a:underline
+                  prose-blockquote:border-l-2 prose-blockquote:border-indigo-500 prose-blockquote:pl-3 prose-blockquote:text-neutral-400 prose-blockquote:italic
+                  prose-a:text-indigo-400 prose-a:no-underline hover:prose-a:underline
                   prose-hr:border-neutral-800
                   select-text"
                 dangerouslySetInnerHTML={{ __html: renderMarkdown(msg.text) }}

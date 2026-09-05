@@ -9,7 +9,7 @@ import {
   Sun,
   ChevronLeft,
   ChevronRight,
-  Sparkles
+  Globe
 } from 'lucide-react';
 import type { ASTTransformationResult, TransformationPlan, ProjectFile } from '../types';
 
@@ -488,7 +488,7 @@ export const LiveTransformationPreview: React.FC<Props> = ({ preview, plan, proj
 
               {/* Dynamic Live URL Address Bar */}
               <div className="px-3 py-1 rounded-lg bg-[#0A0A0A] border border-neutral-800 text-neutral-300 text-[10px] w-2/3 text-center truncate font-bold flex items-center justify-center space-x-1.5">
-                <Sparkles className="w-3 h-3 text-emerald-400" />
+                <Globe className="w-3 h-3 text-emerald-400" />
                 <span>http://localhost:3000/{currentUrlPath}</span>
               </div>
 

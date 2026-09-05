@@ -309,6 +309,23 @@ def analyze_project(payload: Dict[str, Any] = Body(default={})):
 
     return stored
 
+@app.post("/api/projects/file/save")
+def save_file_content(payload: Dict[str, Any] = Body(...)):
+    project_id = payload.get("project_id", "")
+    file_path = payload.get("file_path", "")
+    new_code = payload.get("code", "")
+    
+    stored = workspace_store.get_project(project_id)
+    if stored and "files" in stored:
+        for f in stored["files"]:
+            if f.get("path") == file_path:
+                f["code"] = new_code
+                f["lines"] = len(new_code.splitlines())
+                break
+        workspace_store.save_project(project_id, stored)
+        return {"status": "success", "file_path": file_path, "lines": len(new_code.splitlines())}
+    return {"status": "error", "message": "Project not found"}
+
 @app.post("/api/impact")
 def predict_change_impact(payload: Dict[str, Any] = Body(...)):
     target_symbol = payload.get("target_symbol", "")

@@ -233,6 +233,20 @@ export async function fetchPatentSpec(projectId?: string): Promise<{ title: stri
   return { title: 'Patent Specification', patent_id: 'US-PAT-0000000', markdown: '# Patent Specification Unavailable\n\nPlease scan or import a codebase first.', metrics: {} };
 }
 
+export async function saveFileContent(projectId: string, filePath: string, code: string): Promise<boolean> {
+  try {
+    const res = await safeFetch(`${getApiBase()}/projects/file/save`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ project_id: projectId, file_path: filePath, code })
+    });
+    return res.ok;
+  } catch (err) {
+    console.warn('Failed to persist file edit to backend', err);
+    return false;
+  }
+}
+
 // --- 14 Next-Gen Intelligence API Handlers ---
 
 export async function fetchCodeDNA(projectId?: string) {

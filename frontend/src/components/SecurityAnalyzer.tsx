@@ -70,17 +70,16 @@ export const SecurityAnalyzer: React.FC<SecurityAnalyzerProps> = ({ security }) 
           </p>
         </div>
 
-        <div className="flex items-center space-x-4 bg-gray-900/90 border border-gray-800 p-4 rounded-2xl">
-          <div className="text-center px-3">
-            <p className="text-[10px] text-gray-400 uppercase font-bold">Vulnerabilities</p>
-            <p className={`text-2xl font-black ${security.vulnerabilities.length > 0 ? 'text-rose-400' : 'text-emerald-400'}`}>
+        <div className="flex items-center bg-[#141518] border border-white/[0.08] px-5 py-2.5 rounded-xl shadow-xs divide-x divide-white/[0.08]">
+          <div className="text-center pr-4">
+            <p className="text-[10px] font-mono uppercase tracking-wider text-zinc-400">Vulnerabilities</p>
+            <p className={`text-lg font-mono font-semibold mt-0.5 ${security.vulnerabilities.length > 0 ? 'text-rose-400' : 'text-zinc-100'}`}>
               {security.vulnerabilities.length}
             </p>
           </div>
-          <div className="h-8 w-[1px] bg-gray-800" />
-          <div className="text-center px-3">
-            <p className="text-[10px] text-gray-400 uppercase font-bold">Code Smells</p>
-            <p className={`text-2xl font-black ${security.code_smells.length > 0 ? 'text-amber-400' : 'text-emerald-400'}`}>
+          <div className="text-center pl-4">
+            <p className="text-[10px] font-mono uppercase tracking-wider text-zinc-400">Code Smells</p>
+            <p className={`text-lg font-mono font-semibold mt-0.5 ${security.code_smells.length > 0 ? 'text-amber-400' : 'text-zinc-100'}`}>
               {security.code_smells.length}
             </p>
           </div>

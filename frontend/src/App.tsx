@@ -431,7 +431,13 @@ export function App() {
               )}
 
               {activeTab === 'files' && (
-                <CodeExplorerView files={files} />
+                <CodeExplorerView 
+                  files={files} 
+                  projectId={currentProject.id}
+                  onUpdateFile={(path, newCode) => {
+                    setFiles(prev => prev.map(f => f.path === path ? { ...f, code: newCode, lines: newCode.split('\n').length } : f));
+                  }}
+                />
               )}
             </>
           )}
