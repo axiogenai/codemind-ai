@@ -406,8 +406,9 @@ export const KnowledgeGraphViewer: React.FC<KnowledgeGraphViewerProps> = ({
     canvas.height = height * dpr;
     ctx.scale(dpr, dpr);
 
-    // Group into distinct architectural columns
+    // Group into distinct architectural columns with Project Root separate from Files
     const columns: Record<string, GraphNode[]> = {
+      Projects: [],
       Files: [],
       Classes: [],
       Functions: [],
@@ -415,42 +416,30 @@ export const KnowledgeGraphViewer: React.FC<KnowledgeGraphViewerProps> = ({
     };
 
     filteredNodes.forEach(node => {
-      if (node.type === 'File' || node.type === 'Project') columns.Files.push(node);
+      if (node.type === 'Project') columns.Projects.push(node);
+      else if (node.type === 'File') columns.Files.push(node);
       else if (node.type === 'Class') columns.Classes.push(node);
       else if (node.type === 'Function') columns.Functions.push(node);
       else columns.APIs.push(node);
     });
 
-    const colKeys = ['Files', 'Classes', 'Functions', 'APIs'];
-    const activeCols = colKeys.filter(k => columns[k].length > 0);
+    const colKeys = ['Projects', 'Files', 'Classes', 'Functions', 'APIs'];
 
-    // Spacious, uncluttered column geometry
-    const colCount = Math.max(1, activeCols.length);
+    const activeCols = colKeys.filter(k => columns[k].length > 0);
     const cardWidth = 260;
     const cardHeight = 36;
-    const rowHeight = 48;
-    const colGap = 260; // Huge 260px horizontal breathing room between columns!
+    const rowHeight = 46;
+    const colGap = 260;
     const sideMargin = 80;
+    const startY = 100;
 
-    const totalFlowWidth = sideMargin * 2 + colCount * cardWidth + (colCount - 1) * colGap;
-
-    const nodePositions = new Map<string, { x: number; y: number; node: GraphNode }>();
-
+    // Stable, fixed column horizontal positions
+    const colXMap = new Map<string, number>();
     activeCols.forEach((colKey, colIdx) => {
-      const colNodes = columns[colKey];
-      const colX = sideMargin + colIdx * (cardWidth + colGap);
-      const startY = 100;
-
-      colNodes.forEach((node, rowIdx) => {
-        nodePositions.set(node.id, {
-          x: colX,
-          y: startY + rowIdx * rowHeight,
-          node
-        });
-      });
+      colXMap.set(colKey, sideMargin + colIdx * (cardWidth + colGap));
     });
 
-    // Build fast lookup for connected node IDs
+    // Fast lookup for connected node IDs
     const selectedConnectedNodeIds = new Set<string>();
     if (selectedNode) {
       selectedConnectedNodeIds.add(selectedNode.id);
@@ -474,6 +463,127 @@ export const KnowledgeGraphViewer: React.FC<KnowledgeGraphViewerProps> = ({
       });
     }
 
+    const nodePositions = new Map<string, { x: number; y: number; node: GraphNode }>();
+    const columnHeaderPositions = new Map<string, { x: number; y: number; count: number; total: number }>();
+
+    if (!selectedNode) {
+      // OVERVIEW MODE: Normal full column layout
+      activeCols.forEach((colKey) => {
+        const colNodes = columns[colKey];
+        const colX = colXMap.get(colKey)!;
+
+        columnHeaderPositions.set(colKey, {
+          x: colX,
+          y: 45,
+          count: colNodes.length,
+          total: colNodes.length
+        });
+
+        colNodes.forEach((node, rowIdx) => {
+          nodePositions.set(node.id, {
+            x: colX,
+            y: startY + rowIdx * rowHeight,
+            node
+          });
+        });
+      });
+    } else {
+      // FOCUS MODE: Selected node STAYS AT THE EXACT SAME (X, Y) WHERE IT WAS CLICKED!
+      const selectedColKey = selectedNode.type === 'Project'
+        ? 'Projects'
+        : selectedNode.type === 'File'
+        ? 'Files'
+        : selectedNode.type === 'Class'
+        ? 'Classes'
+        : selectedNode.type === 'Function'
+        ? 'Functions'
+        : 'APIs';
+
+      const selectedColX = colXMap.get(selectedColKey) || sideMargin;
+      const originalSelectedRowIdx = columns[selectedColKey].findIndex(n => n.id === selectedNode.id);
+      const selectedNodeY = startY + (originalSelectedRowIdx >= 0 ? originalSelectedRowIdx : 0) * rowHeight;
+
+      // 1. Anchor selected node at its EXACT location (does not move at all!)
+      nodePositions.set(selectedNode.id, {
+        x: selectedColX,
+        y: selectedNodeY,
+        node: selectedNode
+      });
+
+      // 2. In the same column, stack any other connected nodes right next to selectedNode
+      const otherConnectedInSameCol = columns[selectedColKey].filter(n => n.id !== selectedNode.id && selectedConnectedNodeIds.has(n.id));
+      otherConnectedInSameCol.forEach((node, idx) => {
+        const offset = (idx % 2 === 0) ? -Math.ceil((idx + 1) / 2) * rowHeight : Math.ceil((idx + 1) / 2) * rowHeight;
+        nodePositions.set(node.id, {
+          x: selectedColX,
+          y: Math.max(70, selectedNodeY + offset),
+          node
+        });
+      });
+
+      // Header for selected column
+      let minSelectedColY = selectedNodeY;
+      otherConnectedInSameCol.forEach(n => {
+        const p = nodePositions.get(n.id);
+        if (p && p.y < minSelectedColY) minSelectedColY = p.y;
+      });
+      columnHeaderPositions.set(selectedColKey, {
+        x: selectedColX,
+        y: Math.max(30, minSelectedColY - 36),
+        count: 1 + otherConnectedInSameCol.length,
+        total: columns[selectedColKey].length
+      });
+
+      // Check if both Classes and Functions are connected downstream from this node
+      const hasConnectedClasses = columns.Classes.some(n => selectedConnectedNodeIds.has(n.id));
+      const hasConnectedFunctions = columns.Functions.some(n => selectedConnectedNodeIds.has(n.id));
+
+      // 3. In other columns, gather connected nodes.
+      // If both Classes and Functions exist, stagger Classes to upper tier and Functions to lower tier
+      // to guarantee lines to Functions NEVER pass through or overlap Class cards!
+      activeCols.forEach(colKey => {
+        if (colKey === selectedColKey) return;
+        const connectedInCol = columns[colKey].filter(n => selectedConnectedNodeIds.has(n.id));
+        if (connectedInCol.length === 0) return;
+
+        const colX = colXMap.get(colKey)!;
+        const totalClusterHeight = connectedInCol.length * rowHeight;
+        
+        let clusterStartY: number;
+
+        if (hasConnectedClasses && hasConnectedFunctions) {
+          if (colKey === 'Classes') {
+            // Upper tier: completely above the selected node's horizontal level
+            clusterStartY = Math.max(70, selectedNodeY - totalClusterHeight - 16);
+          } else if (colKey === 'Functions') {
+            // Lower tier: starts level with or below the selected node
+            clusterStartY = selectedNodeY + 16;
+          } else {
+            // Projects (upstream) or APIs (downstream): centered around selectedNodeY
+            clusterStartY = Math.max(70, selectedNodeY + (cardHeight / 2) - (totalClusterHeight / 2));
+          }
+        } else {
+          // Standard centered cluster
+          clusterStartY = Math.max(70, selectedNodeY + (cardHeight / 2) - (totalClusterHeight / 2));
+        }
+
+        connectedInCol.forEach((node, idx) => {
+          nodePositions.set(node.id, {
+            x: colX,
+            y: clusterStartY + idx * rowHeight,
+            node
+          });
+        });
+
+        columnHeaderPositions.set(colKey, {
+          x: colX,
+          y: Math.max(30, clusterStartY - 36),
+          count: connectedInCol.length,
+          total: columns[colKey].length
+        });
+      });
+    }
+
     const drawFlow = () => {
       ctx.fillStyle = '#0A0A0A';
       ctx.fillRect(0, 0, width, height);
@@ -491,20 +601,11 @@ export const KnowledgeGraphViewer: React.FC<KnowledgeGraphViewerProps> = ({
       const visibleMaxX = (width - t.x) / t.k + margin;
 
       // Draw Column Header Plates
-      activeCols.forEach((colKey, colIdx) => {
-        const colNodes = columns[colKey];
-        const visibleCount = selectedNode
-          ? colNodes.filter(n => selectedConnectedNodeIds.has(n.id)).length
-          : colNodes.length;
-
-        const colX = sideMargin + colIdx * (cardWidth + colGap);
-        const headerY = Math.max(30, visibleMinY + 45);
+      columnHeaderPositions.forEach((headerPos, colKey) => {
+        const headerY = selectedNode ? headerPos.y : Math.max(30, visibleMinY + 45);
+        const colX = headerPos.x;
 
         ctx.save();
-        if (selectedNode && visibleCount === 0) {
-          ctx.globalAlpha = 0.2;
-        }
-
         ctx.fillStyle = '#141414';
         ctx.beginPath();
         ctx.roundRect(colX, headerY, cardWidth, 28, 8);
@@ -513,7 +614,7 @@ export const KnowledgeGraphViewer: React.FC<KnowledgeGraphViewerProps> = ({
         ctx.lineWidth = 1;
         ctx.stroke();
 
-        const colColor = colKey === 'Files' ? '#10B981' : colKey === 'Classes' ? '#8B5CF6' : colKey === 'Functions' ? '#EC4899' : '#F59E0B';
+        const colColor = colKey === 'Projects' ? '#3B82F6' : colKey === 'Files' ? '#10B981' : colKey === 'Classes' ? '#8B5CF6' : colKey === 'Functions' ? '#EC4899' : '#F59E0B';
         ctx.fillStyle = colColor;
         ctx.beginPath();
         ctx.arc(colX + 14, headerY + 14, 4, 0, 2 * Math.PI);
@@ -525,7 +626,7 @@ export const KnowledgeGraphViewer: React.FC<KnowledgeGraphViewerProps> = ({
 
         ctx.fillStyle = '#9CA3AF';
         ctx.font = '10px Inter, sans-serif';
-        const countText = selectedNode ? `${visibleCount} / ${colNodes.length}` : `${colNodes.length}`;
+        const countText = selectedNode ? `${headerPos.count}` : `${headerPos.total}`;
         const countWidth = ctx.measureText(countText).width;
         ctx.fillText(countText, colX + cardWidth - countWidth - 12, headerY + 18);
 
@@ -549,7 +650,7 @@ export const KnowledgeGraphViewer: React.FC<KnowledgeGraphViewerProps> = ({
         const tPos = nodePositions.get(tId);
 
         if (sPos && tPos) {
-          // When a node is selected, ONLY draw direct links to that node - all other lines disappear completely!
+          // When a node is selected, ONLY draw direct links to that node
           if (selectedNode) {
             if (sId !== selectedNode.id && tId !== selectedNode.id) {
               return;
@@ -566,21 +667,36 @@ export const KnowledgeGraphViewer: React.FC<KnowledgeGraphViewerProps> = ({
           if (sVis || tVis) {
             const isRelevant = activeFocusNode && (activeFocusNode.id === sId || activeFocusNode.id === tId);
 
-            const startX = sPos.x + cardWidth;
-            const startY = sPos.y + cardHeight / 2;
-            const endX = tPos.x;
-            const endY = tPos.y + cardHeight / 2;
-            const deltaX = Math.max(40, (endX - startX) * 0.5);
-
             ctx.save();
             ctx.beginPath();
-            ctx.moveTo(startX, startY);
-            ctx.bezierCurveTo(startX + deltaX, startY, endX - deltaX, endY, endX, endY);
 
-            if (isRelevant) {
+            if (Math.abs(sPos.x - tPos.x) < 5) {
+              // Same-column connection: smooth arc on the right from port to port (no looping under card)
+              const loopX = sPos.x + cardWidth + 28;
+              const y1 = sPos.y + cardHeight / 2;
+              const y2 = tPos.y + cardHeight / 2;
+              ctx.moveTo(sPos.x + cardWidth, y1);
+              ctx.bezierCurveTo(loopX, y1, loopX, y2, tPos.x + cardWidth, y2);
+            } else {
+              // Inter-column connection: clean left-to-right cubic curve
+              const isLeftToRight = sPos.x <= tPos.x;
+              const leftPos = isLeftToRight ? sPos : tPos;
+              const rightPos = isLeftToRight ? tPos : sPos;
+
+              const startX = leftPos.x + cardWidth;
+              const startY = leftPos.y + cardHeight / 2;
+              const endX = rightPos.x;
+              const endY = rightPos.y + cardHeight / 2;
+              const deltaX = Math.max(40, Math.abs(endX - startX) * 0.45);
+
+              ctx.moveTo(startX, startY);
+              ctx.bezierCurveTo(startX + deltaX, startY, endX - deltaX, endY, endX, endY);
+            }
+
+            if (isRelevant || selectedNode) {
               const beamColor = colorMap[sPos.node.type] || '#E2E8F0';
               ctx.strokeStyle = beamColor;
-              ctx.lineWidth = 2.4;
+              ctx.lineWidth = 2.2;
             } else {
               ctx.strokeStyle = 'rgba(255, 255, 255, 0.08)';
               ctx.lineWidth = 0.9;
@@ -594,16 +710,11 @@ export const KnowledgeGraphViewer: React.FC<KnowledgeGraphViewerProps> = ({
 
       // Draw Node Cards (Clean modern rectangular chips)
       nodePositions.forEach(pos => {
-        // MANDATE: When one node is selected, others MUST DISAPPEAR and only connected ones should be visible!
-        if (selectedNode && !selectedConnectedNodeIds.has(pos.node.id)) {
-          return; // Completely disappear!
-        }
-
         if (pos.y >= visibleMinY && pos.y <= visibleMaxY && pos.x >= visibleMinX && pos.x <= visibleMaxX) {
           const isSelected = selectedNode?.id === pos.node.id;
           const isHovered = hoveredNode?.id === pos.node.id;
           const isConnected = selectedNode
-            ? selectedConnectedNodeIds.has(pos.node.id)
+            ? (pos.node.id !== selectedNode.id)
             : (hoveredNode ? connectedNodeIds.has(pos.node.id) : false);
           const isDimmed = !selectedNode && hoveredNode && !isHovered && !isConnected;
           const color = colorMap[pos.node.type] || '#10B981';
@@ -616,7 +727,7 @@ export const KnowledgeGraphViewer: React.FC<KnowledgeGraphViewerProps> = ({
           // Card container
           ctx.beginPath();
           ctx.roundRect(pos.x, pos.y, cardWidth, cardHeight, 8);
-          ctx.fillStyle = isSelected ? '#1A1A1A' : isHovered ? '#1A1A1A' : '#111113';
+          ctx.fillStyle = isSelected ? '#1E1E22' : isHovered ? '#1A1A1E' : '#111113';
           ctx.fill();
 
           // Card border
@@ -639,7 +750,7 @@ export const KnowledgeGraphViewer: React.FC<KnowledgeGraphViewerProps> = ({
           // Node label text
           ctx.fillStyle = isSelected ? '#FFFFFF' : isHovered ? '#FFFFFF' : '#E2E8F0';
           ctx.font = isSelected || isHovered ? 'bold 11px Inter, monospace' : '10.5px Inter, monospace';
-          const maxChar = 22;
+          const maxChar = selectedNode ? 24 : 22;
           const rawLabel = pos.node.label;
           const displayLabel = rawLabel.length > maxChar ? rawLabel.slice(0, maxChar - 2) + '..' : rawLabel;
           ctx.fillText(displayLabel, pos.x + 28, pos.y + cardHeight / 2 + 4);
@@ -667,11 +778,12 @@ export const KnowledgeGraphViewer: React.FC<KnowledgeGraphViewerProps> = ({
     const d3FlowCanvas = d3.select(canvas);
     d3FlowCanvas.call(zoomBehavior);
 
-    // If transform is default identity, compute an optimal zoom and horizontal offset so the entire flow fills the canvas
+    // Only initialize camera transform once on first mount; never move camera on node selection
     if (flowTransformRef.current.k === 1 && flowTransformRef.current.x === 0 && flowTransformRef.current.y === 0) {
-      const fitScale = Math.min(1.0, Math.max(0.45, (width - 80) / Math.max(100, totalFlowWidth)));
+      const overviewTotalWidth = sideMargin * 2 + activeCols.length * cardWidth + (activeCols.length - 1) * colGap;
+      const fitScale = Math.min(1.0, Math.max(0.4, (width - 80) / Math.max(100, overviewTotalWidth)));
       const initialTransform = d3.zoomIdentity
-        .translate(Math.max(20, (width - totalFlowWidth * fitScale) / 2), 20)
+        .translate(Math.max(20, (width - overviewTotalWidth * fitScale) / 2), 20)
         .scale(fitScale);
       flowTransformRef.current = initialTransform;
       d3FlowCanvas.call(zoomBehavior.transform, initialTransform);
