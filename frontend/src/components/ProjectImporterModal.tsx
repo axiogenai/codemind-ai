@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Upload, FolderSearch, ArrowRight, AlertCircle, Loader2, RefreshCw, Globe } from 'lucide-react';
+import { Upload, FolderSearch, ArrowRight, AlertCircle, Loader2, Globe, X } from 'lucide-react';
 import type { ProjectMeta, ProjectFile, KnowledgeGraphData, SecurityReport } from '../types';
 import { scanLocalDirectory, uploadProjectZip, scrapeWebsiteUrl } from '../services/api';
 
@@ -74,63 +74,72 @@ export const ProjectImporterModal: React.FC<ProjectImporterModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-4">
-      <div className="bg-[#0A0A0A] border border-neutral-800 rounded-3xl max-w-xl w-full p-6 space-y-6">
+    <div className="fixed inset-0 z-50 bg-black/50 dark:bg-black/80 backdrop-blur-xs flex items-center justify-center p-4 transition-opacity">
+      <div className="bg-white dark:bg-[#141518] border border-zinc-200 dark:border-white/[0.08] rounded-3xl max-w-xl w-full p-6 space-y-6 shadow-2xl transition-colors duration-200">
         {/* Top Header */}
-        <div className="flex items-center justify-between border-b border-gray-800 pb-4">
+        <div className="flex items-center justify-between border-b border-zinc-200 dark:border-white/[0.08] pb-4">
           <div>
-            <h3 className="text-xl font-black text-white flex items-center gap-2">
+            <h3 className="text-lg font-bold text-zinc-900 dark:text-white flex items-center gap-2">
               Reverse Engineer Codebase or Website
             </h3>
-            <p className="text-xs text-gray-400 mt-0.5">Select a local directory path, upload a project ZIP, or enter a website URL</p>
+            <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">
+              Select a local directory path, upload a project ZIP, or enter a website URL
+            </p>
           </div>
           <button 
             onClick={onClose} 
             disabled={importing}
-            className="text-gray-400 hover:text-white font-bold text-sm disabled:opacity-30 cursor-pointer"
+            className="p-1.5 rounded-lg text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-white hover:bg-zinc-100 dark:hover:bg-zinc-800 disabled:opacity-30 cursor-pointer transition-colors"
+            aria-label="Close modal"
           >
-            ✕
+            <X className="w-4 h-4" />
           </button>
         </div>
 
         {/* Tab Switcher */}
-        <div className="flex items-center space-x-2 bg-gray-900 border border-gray-800 p-1.5 rounded-2xl">
+        <div className="flex items-center space-x-1.5 bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-white/[0.08] p-1 rounded-2xl">
           <button
             onClick={() => !importing && setActiveTab('local')}
             disabled={importing}
-            className={`flex-1 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center justify-center space-x-1.5 ${
-              activeTab === 'local' ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40' : 'text-gray-400 hover:text-gray-200'
+            className={`flex-1 py-2 rounded-xl text-xs font-semibold transition-all flex items-center justify-center space-x-1.5 cursor-pointer ${
+              activeTab === 'local'
+                ? 'bg-white dark:bg-[#141518] text-zinc-900 dark:text-white shadow-2xs border border-zinc-200 dark:border-white/[0.08]'
+                : 'text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white'
             }`}
           >
-            <FolderSearch className="w-4 h-4" />
+            <FolderSearch className="w-4 h-4 text-sky-600 dark:text-sky-400" />
             <span>Local Directory</span>
           </button>
 
           <button
             onClick={() => !importing && setActiveTab('upload')}
             disabled={importing}
-            className={`flex-1 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center justify-center space-x-1.5 ${
-              activeTab === 'upload' ? 'bg-purple-500/20 text-purple-300 border border-purple-500/40' : 'text-gray-400 hover:text-gray-200'
+            className={`flex-1 py-2 rounded-xl text-xs font-semibold transition-all flex items-center justify-center space-x-1.5 cursor-pointer ${
+              activeTab === 'upload'
+                ? 'bg-white dark:bg-[#141518] text-zinc-900 dark:text-white shadow-2xs border border-zinc-200 dark:border-white/[0.08]'
+                : 'text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white'
             }`}
           >
-            <Upload className="w-4 h-4" />
+            <Upload className="w-4 h-4 text-zinc-700 dark:text-zinc-300" />
             <span>ZIP Archive</span>
           </button>
 
           <button
             onClick={() => !importing && setActiveTab('url')}
             disabled={importing}
-            className={`flex-1 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center justify-center space-x-1.5 ${
-              activeTab === 'url' ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40' : 'text-gray-400 hover:text-gray-200'
+            className={`flex-1 py-2 rounded-xl text-xs font-semibold transition-all flex items-center justify-center space-x-1.5 cursor-pointer ${
+              activeTab === 'url'
+                ? 'bg-white dark:bg-[#141518] text-zinc-900 dark:text-white shadow-2xs border border-zinc-200 dark:border-white/[0.08]'
+                : 'text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white'
             }`}
           >
-            <Globe className="w-4 h-4 text-emerald-400" />
+            <Globe className="w-4 h-4 text-teal-600 dark:text-teal-400" />
             <span>Website URL</span>
           </button>
         </div>
 
         {errorMessage && (
-          <div className="p-3 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-400 text-xs flex items-center space-x-2 animate-in fade-in duration-150">
+          <div className="p-3 rounded-xl bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800 text-rose-700 dark:text-rose-300 text-xs flex items-center space-x-2 animate-in fade-in duration-150">
             <AlertCircle className="w-4 h-4 shrink-0" />
             <span>{errorMessage}</span>
           </div>
@@ -140,26 +149,30 @@ export const ProjectImporterModal: React.FC<ProjectImporterModalProps> = ({
         {activeTab === 'local' && (
           <div className="space-y-4">
             <div>
-              <label className="text-xs font-bold text-gray-300 block mb-2">Absolute Directory Path on Disk</label>
+              <label className="text-xs font-semibold text-zinc-700 dark:text-zinc-300 block mb-2">
+                Absolute Directory Path on Disk
+              </label>
               <input
                 type="text"
                 placeholder="e.g. C:/Users/aditya/projects/my-awesome-app"
                 value={localPath}
                 disabled={importing}
                 onChange={(e) => setLocalPath(e.target.value)}
-                className="w-full bg-gray-900 border border-gray-800 rounded-xl px-4 py-3 text-xs text-white placeholder-gray-500 outline-none focus:border-cyan-500 code-font disabled:opacity-50"
+                className="w-full bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-white/[0.08] focus:border-zinc-400 dark:focus:border-zinc-500 rounded-xl px-4 py-2.5 text-xs text-zinc-900 dark:text-white placeholder:text-zinc-400 dark:placeholder:text-zinc-500 outline-none code-font disabled:opacity-50 transition-colors"
               />
-              <p className="text-[11px] text-gray-400 mt-1">CodeMind AI will automatically ignore node_modules, .git, binaries, and virtualenvs.</p>
+              <p className="text-[11px] text-zinc-500 dark:text-zinc-400 mt-1.5">
+                CodeMind AI will automatically ignore node_modules, .git, binaries, and virtualenvs.
+              </p>
             </div>
 
             <button
               onClick={handleScanLocal}
               disabled={importing || !localPath.trim()}
-              className="w-full py-3.5 rounded-xl bg-neutral-100 text-neutral-900 font-bold text-xs hover:bg-white border border-neutral-300 transition-all disabled:opacity-50 flex items-center justify-center space-x-2.5 cursor-pointer"
+              className="w-full py-3 rounded-xl bg-zinc-900 hover:bg-zinc-800 text-white dark:bg-white dark:hover:bg-zinc-200 dark:text-zinc-950 font-semibold text-xs transition-all disabled:opacity-40 flex items-center justify-center space-x-2 cursor-pointer shadow-xs hover:scale-[1.01]"
             >
               {importing ? (
                 <>
-                  <Loader2 className="w-4 h-4 animate-spin text-neutral-700" />
+                  <Loader2 className="w-4 h-4 animate-spin text-current" />
                   <span>Scanning & Parsing Universal AST...</span>
                 </>
               ) : (
@@ -175,8 +188,10 @@ export const ProjectImporterModal: React.FC<ProjectImporterModalProps> = ({
         {/* Tab 2: ZIP Archive */}
         {activeTab === 'upload' && (
           <div className="space-y-4">
-            <div className={`border-2 border-dashed rounded-3xl p-8 flex flex-col items-center justify-center text-center transition-all bg-gray-900/40 relative ${
-              zipFile ? 'border-purple-500/60 bg-purple-950/20' : 'border-gray-800 hover:border-purple-500/50'
+            <div className={`border-2 border-dashed rounded-2xl p-7 flex flex-col items-center justify-center text-center transition-all relative ${
+              zipFile
+                ? 'border-zinc-500/60 dark:border-white/40 bg-zinc-100 dark:bg-white/[0.04]'
+                : 'border-zinc-300 dark:border-zinc-700 hover:border-zinc-400 dark:hover:border-zinc-500 bg-zinc-50 dark:bg-zinc-900/40'
             }`}>
               <input
                 type="file"
@@ -187,19 +202,20 @@ export const ProjectImporterModal: React.FC<ProjectImporterModalProps> = ({
               />
               {importing ? (
                 <div className="flex flex-col items-center space-y-2 py-2">
-                  <div className="relative">
-                    <Loader2 className="w-12 h-12 text-purple-400 animate-spin" />
-                    <RefreshCw className="w-5 h-5 text-cyan-300 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 animate-spin" />
-                  </div>
-                  <span className="text-xs font-bold text-purple-300 mt-2">Analyzing AST structure & building Knowledge Graph...</span>
+                  <Loader2 className="w-8 h-8 text-zinc-700 dark:text-zinc-300 animate-spin" />
+                  <span className="text-xs font-semibold text-zinc-800 dark:text-zinc-200 mt-2">
+                    Analyzing AST structure & building Knowledge Graph...
+                  </span>
                 </div>
               ) : (
                 <>
-                  <Upload className="w-10 h-10 text-purple-400 mb-3 animate-bounce" />
-                  <h4 className="text-sm font-bold text-white mb-1">
+                  <Upload className="w-8 h-8 text-zinc-500 dark:text-zinc-400 mb-2 transition-transform group-hover:scale-105" />
+                  <h4 className="text-xs font-bold text-zinc-900 dark:text-white mb-1">
                     {zipFile ? zipFile.name : 'Click or Drag & Drop Project ZIP File'}
                   </h4>
-                  <p className="text-xs text-gray-400">Supports .zip archives containing Python, TS/JS, Java, Go, Rust, C++, SQL, Dockerfiles</p>
+                  <p className="text-[11px] text-zinc-500 dark:text-zinc-400 max-w-sm">
+                    Supports .zip archives containing Python, TS/JS, Java, Go, Rust, C++, SQL, Dockerfiles
+                  </p>
                 </>
               )}
             </div>
@@ -207,11 +223,11 @@ export const ProjectImporterModal: React.FC<ProjectImporterModalProps> = ({
             <button
               onClick={handleUploadZip}
               disabled={importing || !zipFile}
-              className="w-full py-3.5 rounded-xl bg-neutral-100 text-neutral-900 font-bold text-xs hover:bg-white border border-neutral-300 transition-all disabled:opacity-50 flex items-center justify-center space-x-2.5 cursor-pointer"
+              className="w-full py-3 rounded-xl bg-zinc-900 hover:bg-zinc-800 text-white dark:bg-white dark:hover:bg-zinc-200 dark:text-zinc-950 font-semibold text-xs transition-all disabled:opacity-40 flex items-center justify-center space-x-2 cursor-pointer shadow-xs hover:scale-[1.01]"
             >
               {importing ? (
                 <>
-                  <Loader2 className="w-4 h-4 animate-spin text-neutral-700" />
+                  <Loader2 className="w-4 h-4 animate-spin text-current" />
                   <span>Extracting & Generating Knowledge Graph...</span>
                 </>
               ) : (
@@ -228,26 +244,30 @@ export const ProjectImporterModal: React.FC<ProjectImporterModalProps> = ({
         {activeTab === 'url' && (
           <div className="space-y-4">
             <div>
-              <label className="text-xs font-bold text-gray-300 block mb-2">Live Website URL</label>
+              <label className="text-xs font-semibold text-zinc-700 dark:text-zinc-300 block mb-2">
+                Live Website URL
+              </label>
               <input
                 type="text"
                 placeholder="e.g. https://example.com or http://localhost:3000"
                 value={websiteUrl}
                 disabled={importing}
                 onChange={(e) => setWebsiteUrl(e.target.value)}
-                className="w-full bg-gray-900 border border-gray-800 rounded-xl px-4 py-3 text-xs text-white placeholder-gray-500 outline-none focus:border-emerald-500 code-font disabled:opacity-50"
+                className="w-full bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-white/[0.08] focus:border-zinc-400 dark:focus:border-zinc-500 rounded-xl px-4 py-2.5 text-xs text-zinc-900 dark:text-white placeholder:text-zinc-400 dark:placeholder:text-zinc-500 outline-none code-font disabled:opacity-50 transition-colors"
               />
-              <p className="text-[11px] text-gray-400 mt-1">CodeMind AI will fetch HTML markup, JS script bundles, CSS stylesheets, and API endpoints directly from the website.</p>
+              <p className="text-[11px] text-zinc-500 dark:text-zinc-400 mt-1.5">
+                CodeMind AI will fetch HTML markup, JS script bundles, CSS stylesheets, and API endpoints directly from the website.
+              </p>
             </div>
 
             <button
               onClick={handleScrapeUrl}
               disabled={importing || !websiteUrl.trim()}
-              className="w-full py-3.5 rounded-xl bg-neutral-100 text-neutral-900 font-bold text-xs hover:bg-white border border-neutral-300 transition-all disabled:opacity-50 flex items-center justify-center space-x-2.5 cursor-pointer"
+              className="w-full py-3 rounded-xl bg-zinc-900 hover:bg-zinc-800 text-white dark:bg-white dark:hover:bg-zinc-200 dark:text-zinc-950 font-semibold text-xs transition-all disabled:opacity-40 flex items-center justify-center space-x-2 cursor-pointer shadow-xs hover:scale-[1.01]"
             >
               {importing ? (
                 <>
-                  <Loader2 className="w-4 h-4 animate-spin text-emerald-200" />
+                  <Loader2 className="w-4 h-4 animate-spin text-current" />
                   <span>Fetching Website Source & Analyzing AST...</span>
                 </>
               ) : (

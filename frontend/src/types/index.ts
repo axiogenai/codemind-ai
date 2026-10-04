@@ -24,6 +24,10 @@ export interface ProjectFile {
     apis: string[];
     tables: string[];
     imports: string[];
+    models?: Array<{
+      name: string;
+      fields: Array<{ name: string; type: string; is_pk?: boolean }>;
+    }>;
   };
 }
 

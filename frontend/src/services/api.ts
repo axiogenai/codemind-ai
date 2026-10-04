@@ -150,7 +150,7 @@ export async function predictImpact(targetSymbol: string, projectId?: string): P
   return {
     target: targetSymbol,
     risk_level: 'LOW',
-    risk_color: '#10B981',
+    risk_color: '#0D9488',
     blast_radius_score: 0,
     confidence_score: 95,
     affected_files_count: 0,

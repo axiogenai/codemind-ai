@@ -469,7 +469,8 @@ def _process_and_analyze_files(project_id: str, project_name: str, description: 
                 "functions": normalized.functions,
                 "imports": normalized.imports,
                 "apis": normalized.apis,
-                "tables": normalized.tables
+                "tables": normalized.tables,
+                "models": normalized.models
             },
             "code": code
         })

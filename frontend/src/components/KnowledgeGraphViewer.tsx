@@ -124,12 +124,12 @@ export const KnowledgeGraphViewer: React.FC<KnowledgeGraphViewerProps> = ({
     ctx.scale(dpr, dpr);
 
     const colorMap: Record<string, string> = {
-      Project: '#3B82F6',
-      File: '#10B981',
-      Class: '#8B5CF6',
-      Function: '#EC4899',
+      Project: '#0284C7',
+      File: '#0D9488',
+      Class: '#38BDF8',
+      Function: '#FB7185',
       API: '#F59E0B',
-      DatabaseTable: '#06B6D4'
+      DatabaseTable: '#94A3B8'
     };
 
     const N = filteredNodes.length;
@@ -205,8 +205,8 @@ export const KnowledgeGraphViewer: React.FC<KnowledgeGraphViewerProps> = ({
               ctx.strokeStyle = 'rgba(75, 85, 99, 0.05)';
               ctx.lineWidth = 0.35 / t.k;
             } else if (isConnected) {
-              ctx.strokeStyle = isGnnMode ? '#A855F7' : '#00F0FF';
-              ctx.lineWidth = 2.4 / t.k;
+              ctx.strokeStyle = isGnnMode ? 'rgba(168, 85, 247, 0.45)' : 'rgba(0, 240, 255, 0.4)';
+              ctx.lineWidth = 1.2 / t.k;
             } else {
               ctx.strokeStyle = isGnnMode ? `rgba(168, 85, 247, ${defaultEdgeOpacity * 1.2})` : `rgba(56, 189, 248, ${defaultEdgeOpacity})`;
               ctx.lineWidth = Math.max(0.4, 0.85 / t.k);
@@ -223,7 +223,7 @@ export const KnowledgeGraphViewer: React.FC<KnowledgeGraphViewerProps> = ({
       for (let i = 0; i < filteredNodes.length; i++) {
         const node: any = filteredNodes[i];
         if (node.x >= minX && node.x <= maxX && node.y >= minY && node.y <= maxY) {
-          const color = isGnnMode ? (node.type === 'File' ? '#A855F7' : '#06B6D4') : (colorMap[node.type] || '#6B7280');
+          const color = isGnnMode ? (node.type === 'File' ? '#0D9488' : '#38BDF8') : (colorMap[node.type] || '#6B7280');
           const isNeighbor = !activeHighlightNode || neighborNodeIds.has(node.id);
           const isSelected = selectedNode && selectedNode.id === node.id;
           const isHovered = hoveredNode && hoveredNode.id === node.id;
@@ -614,7 +614,7 @@ export const KnowledgeGraphViewer: React.FC<KnowledgeGraphViewerProps> = ({
         ctx.lineWidth = 1;
         ctx.stroke();
 
-        const colColor = colKey === 'Projects' ? '#3B82F6' : colKey === 'Files' ? '#10B981' : colKey === 'Classes' ? '#8B5CF6' : colKey === 'Functions' ? '#EC4899' : '#F59E0B';
+        const colColor = colKey === 'Projects' ? '#0284C7' : colKey === 'Files' ? '#0D9488' : colKey === 'Classes' ? '#38BDF8' : colKey === 'Functions' ? '#FB7185' : '#F59E0B';
         ctx.fillStyle = colColor;
         ctx.beginPath();
         ctx.arc(colX + 14, headerY + 14, 4, 0, 2 * Math.PI);
@@ -635,12 +635,12 @@ export const KnowledgeGraphViewer: React.FC<KnowledgeGraphViewerProps> = ({
 
       // Draw Curved Connection Links
       const colorMap: Record<string, string> = {
-        Project: '#3B82F6',
-        File: '#10B981',
-        Class: '#8B5CF6',
-        Function: '#EC4899',
+        Project: '#0284C7',
+        File: '#0D9488',
+        Class: '#38BDF8',
+        Function: '#FB7185',
         API: '#F59E0B',
-        DatabaseTable: '#06B6D4'
+        DatabaseTable: '#94A3B8'
       };
 
       filteredLinks.forEach(link => {
@@ -717,7 +717,7 @@ export const KnowledgeGraphViewer: React.FC<KnowledgeGraphViewerProps> = ({
             ? (pos.node.id !== selectedNode.id)
             : (hoveredNode ? connectedNodeIds.has(pos.node.id) : false);
           const isDimmed = !selectedNode && hoveredNode && !isHovered && !isConnected;
-          const color = colorMap[pos.node.type] || '#10B981';
+          const color = colorMap[pos.node.type] || '#0D9488';
 
           ctx.save();
           if (isDimmed) {
@@ -964,9 +964,9 @@ export const KnowledgeGraphViewer: React.FC<KnowledgeGraphViewerProps> = ({
                     : 'text-zinc-400 hover:text-zinc-200 hover:bg-white/[0.03]'
                 }`}
               >
-                <GitMerge className="w-3.5 h-3.5 text-emerald-400" />
+                <GitMerge className="w-3.5 h-3.5 text-teal-400" />
                 <span>Connection Flow</span>
-                <span className="text-[9px] font-mono tracking-wide uppercase px-1.5 py-0.5 rounded bg-emerald-950/70 text-emerald-400 border border-emerald-800/40 ml-1 font-semibold">
+                <span className="text-[9px] font-mono tracking-wide uppercase px-1.5 py-0.5 rounded bg-teal-950/70 text-teal-400 border border-teal-800/40 ml-1 font-semibold">
                   Zero Lag
                 </span>
               </button>
@@ -977,19 +977,16 @@ export const KnowledgeGraphViewer: React.FC<KnowledgeGraphViewerProps> = ({
               onClick={() => setIsGnnMode(!isGnnMode)}
               className={`px-3 py-1.5 rounded-lg text-xs font-medium flex items-center gap-2 transition-all cursor-pointer ${
                 isGnnMode
-                  ? 'bg-[#18261F] text-emerald-300 border border-emerald-500/40 shadow-xs'
+                  ? 'bg-teal-500/10 text-teal-300 border border-teal-500/40 shadow-xs'
                   : 'bg-[#151619] border border-white/[0.06] text-zinc-400 hover:text-zinc-200 hover:border-white/[0.12]'
               }`}
             >
               {isGnnMode ? (
-                <span className="relative flex h-2 w-2">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-60" />
-                  <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-400" />
-                </span>
+                <span className="h-2 w-2 rounded-full bg-teal-400 ring-2 ring-teal-400/20" />
               ) : (
                 <span className="h-2 w-2 rounded-full bg-zinc-600" />
               )}
-              <Cpu className={`w-3.5 h-3.5 ${isGnnMode ? 'text-emerald-400' : 'text-zinc-400'}`} />
+              <Cpu className={`w-3.5 h-3.5 ${isGnnMode ? 'text-teal-400' : 'text-zinc-400'}`} />
               <span>{isGnnMode ? 'GNN Neural Engine Active' : 'GNN Neural Mode'}</span>
             </button>
 
@@ -1024,22 +1021,22 @@ export const KnowledgeGraphViewer: React.FC<KnowledgeGraphViewerProps> = ({
           {/* Counts Legend & Telemetry */}
           <div className="flex items-center gap-3 bg-[#151619] border border-white/[0.06] rounded-lg px-3 py-1.5 text-xs font-mono text-zinc-400">
             <span className="text-zinc-100 font-medium flex items-center gap-1.5 font-sans">
-              <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 shadow-[0_0_6px_rgba(6,182,212,0.6)]" />
+              <span className="w-1.5 h-1.5 rounded-full bg-sky-400" />
               <strong className="text-white font-semibold">{totalNodesCount}</strong> Nodes
             </span>
             <span className="w-px h-3 bg-white/[0.08]" />
             <div className="hidden xl:flex items-center gap-3 text-[11px]">
               <span className="flex items-center gap-1.5 text-zinc-400">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" /> {typeCounts.File} Files
+                <span className="w-1.5 h-1.5 rounded-full bg-teal-400" /> {typeCounts.File} Files
               </span>
               <span className="flex items-center gap-1.5 text-zinc-400">
-                <span className="w-1.5 h-1.5 rounded-full bg-purple-400" /> {typeCounts.Class} Classes
+                <span className="w-1.5 h-1.5 rounded-full bg-sky-400" /> {typeCounts.Class} Classes
               </span>
               <span className="flex items-center gap-1.5 text-zinc-400">
-                <span className="w-1.5 h-1.5 rounded-full bg-pink-400" /> {typeCounts.Function} Functions
+                <span className="w-1.5 h-1.5 rounded-full bg-rose-400" /> {typeCounts.Function} Functions
               </span>
               <span className="flex items-center gap-1.5 text-zinc-400">
-                <span className="w-1.5 h-1.5 rounded-full bg-amber-400" /> {typeCounts.API} APIs
+                <span className="w-1.5 h-1.5 rounded-full bg-zinc-400" /> {typeCounts.API} APIs
               </span>
             </div>
           </div>
@@ -1055,11 +1052,11 @@ export const KnowledgeGraphViewer: React.FC<KnowledgeGraphViewerProps> = ({
 
             {[
               { id: 'ALL', label: 'All Entities', count: totalNodesCount, color: '#A1A1AA' },
-              { id: 'File', label: 'Files', count: typeCounts.File, color: '#10B981' },
-              { id: 'Class', label: 'Classes', count: typeCounts.Class, color: '#8B5CF6' },
-              { id: 'Function', label: 'Functions', count: typeCounts.Function, color: '#EC4899' },
+              { id: 'File', label: 'Files', count: typeCounts.File, color: '#0D9488' },
+              { id: 'Class', label: 'Classes', count: typeCounts.Class, color: '#38BDF8' },
+              { id: 'Function', label: 'Functions', count: typeCounts.Function, color: '#FB7185' },
               { id: 'API', label: 'APIs', count: typeCounts.API, color: '#F59E0B' },
-              { id: 'DatabaseTable', label: 'Database Tables', count: typeCounts.DatabaseTable, color: '#06B6D4' }
+              { id: 'DatabaseTable', label: 'Database Tables', count: typeCounts.DatabaseTable, color: '#94A3B8' }
             ].map((item) => {
               const isActive = filterType === item.id;
               return (
@@ -1118,7 +1115,7 @@ export const KnowledgeGraphViewer: React.FC<KnowledgeGraphViewerProps> = ({
           >
             <canvas ref={flowCanvasRef} className="w-full h-full bg-[#0A0A0A] cursor-grab active:cursor-grabbing" />
             <div className="absolute top-4 left-4 p-2.5 rounded-xl bg-[#141414]/90 border border-neutral-800 text-[11px] text-neutral-300 flex items-center space-x-2.5 shadow-lg select-none">
-              <span className={`w-2 h-2 rounded-full ${selectedNode ? 'bg-amber-400 animate-pulse' : 'bg-zinc-400'}`} />
+              <span className={`w-2 h-2 rounded-full ${selectedNode ? 'bg-zinc-200' : 'bg-zinc-600'}`} />
               {selectedNode ? (
                 <div className="flex items-center gap-2">
                   <span>
@@ -1202,9 +1199,9 @@ export const KnowledgeGraphViewer: React.FC<KnowledgeGraphViewerProps> = ({
                   onSelectImpactTarget(targetName);
                   onNavigateTab('impact');
                 }}
-                className="w-full text-left px-3 py-2 rounded-xl text-xs font-bold text-amber-300 hover:bg-amber-500/20 hover:text-white flex items-center space-x-2 transition-all cursor-pointer"
+                className="w-full text-left px-3 py-2 rounded-xl text-xs font-bold text-zinc-300 hover:bg-zinc-800 hover:text-white flex items-center space-x-2 transition-all cursor-pointer"
               >
-                <GitPullRequest className="w-3.5 h-3.5 text-amber-400" />
+                <GitPullRequest className="w-3.5 h-3.5 text-zinc-400" />
                 <span>Predict Change Impact</span>
               </button>
             )}
@@ -1220,9 +1217,10 @@ export const KnowledgeGraphViewer: React.FC<KnowledgeGraphViewerProps> = ({
               </span>
               <button
                 onClick={() => setSelectedNode(null)}
-                className="text-gray-400 hover:text-white text-xs font-bold px-2 py-1 rounded-lg hover:bg-gray-800 cursor-pointer"
+                className="text-gray-400 hover:text-white p-1 rounded-lg hover:bg-gray-800 cursor-pointer transition-colors"
+                aria-label="Close details"
               >
-                ✕
+                <X className="w-3.5 h-3.5" />
               </button>
             </div>
 
@@ -1240,22 +1238,22 @@ export const KnowledgeGraphViewer: React.FC<KnowledgeGraphViewerProps> = ({
 
             {/* GNN Neural Network Embeddings if in GNN Mode */}
             {isGnnMode && (
-              <div className="p-3 rounded-xl bg-purple-950/30 border border-purple-500/40 text-xs space-y-1.5">
+              <div className="p-3 rounded-xl bg-slate-900/60 border border-slate-700/60 text-xs space-y-1.5">
                 <div className="flex items-center justify-between">
-                  <span className="text-purple-300 font-extrabold flex items-center gap-1.5 text-[11px]">
-                    <Cpu className="w-3.5 h-3.5 text-cyan-300 animate-pulse" />
+                  <span className="text-slate-300 font-extrabold flex items-center gap-1.5 text-[11px]">
+                    <Cpu className="w-3.5 h-3.5 text-sky-400" />
                     GNN 16-D Neural Vector
                   </span>
-                  <span className="text-[10px] font-mono text-purple-300 bg-purple-900/40 px-2 py-0.5 rounded border border-purple-500/40 font-bold">
+                  <span className="text-[10px] font-mono text-slate-300 bg-slate-800/80 px-2 py-0.5 rounded border border-slate-700 font-bold">
                     2-Layer GCN
                   </span>
                 </div>
-                <p className="text-[10px] text-cyan-200 font-mono break-all bg-gray-950/90 p-2 rounded-lg border border-gray-800">
+                <p className="text-[10px] text-sky-200 font-mono break-all bg-gray-950/90 p-2 rounded-lg border border-gray-800">
                   [{selectedNode.embedding_vector ? selectedNode.embedding_vector.join(', ') : '0.41, 0.08, 0.95, 0.12, 0.0, 0.77'}]
                 </p>
                 <div className="flex items-center justify-between text-[10px] text-gray-400 pt-0.5 font-semibold">
-                  <span>Neural Cluster: <strong className="text-cyan-300">{selectedNode.cluster_id || 'Cluster_0'}</strong></span>
-                  <span>Activation: <strong className="text-emerald-400">GCN ReLU</strong></span>
+                  <span>Neural Cluster: <strong className="text-sky-300">{selectedNode.cluster_id || 'Cluster_0'}</strong></span>
+                  <span>Activation: <strong className="text-teal-400">GCN ReLU</strong></span>
                 </div>
               </div>
             )}
@@ -1292,7 +1290,7 @@ export const KnowledgeGraphViewer: React.FC<KnowledgeGraphViewerProps> = ({
                     onSelectImpactTarget(selectedNode.file || selectedNode.label);
                     onNavigateTab('impact');
                   }}
-                  className="flex-1 px-3 py-2 rounded-xl bg-gradient-to-r from-amber-500 to-orange-600 text-white text-xs font-extrabold flex items-center justify-center space-x-1.5 shadow-md shadow-amber-500/20 hover:scale-[1.02] transition-all cursor-pointer"
+                  className="flex-1 px-3 py-2 rounded-xl bg-zinc-900 hover:bg-zinc-800 text-white dark:bg-white dark:hover:bg-zinc-200 dark:text-zinc-950 text-xs font-bold flex items-center justify-center space-x-1.5 hover:scale-[1.01] transition-all cursor-pointer shadow-xs"
                 >
                   <GitPullRequest className="w-3.5 h-3.5" />
                   <span>Predict Impact</span>
@@ -1309,9 +1307,9 @@ export const KnowledgeGraphViewer: React.FC<KnowledgeGraphViewerProps> = ({
                     onNavigateTab('chat');
                   }
                 }}
-                className="flex-1 px-3 py-2 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 text-white text-xs font-extrabold flex items-center justify-center space-x-1.5 shadow-md shadow-cyan-500/20 hover:scale-[1.02] transition-all cursor-pointer"
+                className="flex-1 px-3 py-2 rounded-xl bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-zinc-800 dark:text-zinc-200 text-xs font-bold flex items-center justify-center space-x-1.5 hover:scale-[1.01] transition-all cursor-pointer border border-zinc-200 dark:border-white/[0.08]"
               >
-                <Zap className="w-3.5 h-3.5" />
+                <Zap className="w-3.5 h-3.5 text-zinc-600 dark:text-zinc-300" />
                 <span>Ask AI</span>
               </button>
             </div>

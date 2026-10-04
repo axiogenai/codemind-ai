@@ -121,15 +121,16 @@ class KnowledgeGraphEngine:
                 )
                 self.graph.add_edge(path, tbl_id, relation="READS_WRITES")
 
-        # Inter-file Import Dependencies Resolution with accurate lookup
+        # Inter-file Import Dependencies Resolution with posixpath normalization & multi-extension resolution
+        import posixpath
         file_lookup = {}
         for f in files:
-            p = f["path"].replace('\\', '/').strip('/')
-            file_lookup[p] = f["path"]
-            base = p.rsplit('.', 1)[0]
+            p_clean = posixpath.normpath(f["path"].replace('\\', '/').strip('/'))
+            file_lookup[p_clean] = f["path"]
+            base = posixpath.splitext(p_clean)[0]
             file_lookup[base] = f["path"]
-            fname = p.split('/')[-1]
-            fname_base = fname.rsplit('.', 1)[0]
+            fname = posixpath.basename(p_clean)
+            fname_base = posixpath.splitext(fname)[0]
             if fname_base and len(fname_base) > 3:
                 file_lookup.setdefault(fname_base, f["path"])
 
@@ -138,29 +139,50 @@ class KnowledgeGraphEngine:
             "logging", "datetime", "pathlib", "functools", "itertools", "threading", "subprocess",
             "asyncio", "copy", "shutil", "tempfile", "unittest", "pytest", "numpy", "pandas",
             "torch", "react", "react-dom", "lucide-react", "d3", "axios", "clsx", "tailwind-merge",
-            "fastapi", "pydantic", "uvicorn", "sqlalchemy", "networkx", "requests", "http", "socket"
+            "fastapi", "pydantic", "uvicorn", "sqlalchemy", "networkx", "requests", "http", "socket",
+            "express", "cors", "dotenv", "bcrypt", "bcryptjs", "jsonwebtoken", "uuid", "fs", "path",
+            "crypto", "events", "stream", "util", "url", "querystring", "child_process"
         }
 
         for f in files:
             src_path = f["path"]
+            src_norm = posixpath.normpath(src_path.replace('\\', '/').strip('/'))
+            cur_dir = posixpath.dirname(src_norm)
             imports = f.get("symbols", {}).get("imports", [])
+
             for imp in imports:
                 imp_clean = imp.strip().replace('\\', '/').strip('/')
-                if imp_clean.lower() in COMMON_STDLIB or len(imp_clean) < 3:
+                if imp_clean.lower() in COMMON_STDLIB or len(imp_clean) < 2:
                     continue
 
-                target_path = None
-                if imp_clean in file_lookup:
-                    target_path = file_lookup[imp_clean]
+                candidates = []
+                if imp_clean.startswith('.'):
+                    rel = posixpath.normpath(posixpath.join(cur_dir, imp_clean))
+                    candidates.extend([
+                        rel,
+                        rel + '.ts', rel + '.tsx', rel + '.js', rel + '.jsx', rel + '.py',
+                        posixpath.join(rel, 'index.ts'), posixpath.join(rel, 'index.js'), posixpath.join(rel, 'index.tsx')
+                    ])
+                elif imp_clean.startswith('@/') or imp_clean.startswith('~/'):
+                    sub = imp_clean[2:]
+                    candidates.extend([
+                        sub, sub + '.ts', sub + '.tsx', sub + '.js', sub + '.jsx',
+                        'src/' + sub, 'src/' + sub + '.ts', 'src/' + sub + '.tsx',
+                        'frontend/src/' + sub, 'frontend/src/' + sub + '.ts', 'frontend/src/' + sub + '.tsx',
+                        'backend/src/' + sub, 'backend/src/' + sub + '.ts', 'backend/src/' + sub + '.js'
+                    ])
                 else:
-                    dotted = imp_clean.replace('.', '/')
-                    if dotted in file_lookup:
-                        target_path = file_lookup[dotted]
-                    else:
-                        cur_dir = src_path.replace('\\', '/').rsplit('/', 1)[0] if '/' in src_path.replace('\\', '/') else ""
-                        rel = f"{cur_dir}/{imp_clean}".replace('//', '/')
-                        if rel in file_lookup:
-                            target_path = file_lookup[rel]
+                    candidates.extend([
+                        imp_clean, imp_clean + '.ts', imp_clean + '.js', imp_clean + '.py',
+                        posixpath.join(cur_dir, imp_clean),
+                        posixpath.basename(imp_clean)
+                    ])
+
+                target_path = None
+                for c in candidates:
+                    if c in file_lookup:
+                        target_path = file_lookup[c]
+                        break
 
                 if target_path and target_path != src_path:
                     self.graph.add_edge(src_path, target_path, relation="IMPORTS")

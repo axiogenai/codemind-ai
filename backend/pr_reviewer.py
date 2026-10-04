@@ -25,11 +25,11 @@ class PRReviewerEngine:
 
         notes = []
         if has_secrets:
-            notes.append("⚠️ Potential hardcoded secret credential string in added lines.")
+            notes.append("Potential hardcoded secret credential string in added lines.")
         if has_eval:
-            notes.append("⚠️ Dynamic code execution via eval/exec detected.")
+            notes.append("Dynamic code execution via eval/exec detected.")
         if not notes:
-            notes.append("✅ Zero high-risk security flaws or secret leaks in diff.")
+            notes.append("Zero high-risk security flaws or secret leaks in diff.")
 
         verdict = "REJECTED" if has_eval else "NEEDS_CHANGES" if has_secrets else "APPROVED"
 

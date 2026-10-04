@@ -25,9 +25,12 @@ class SecurityCodeSmellEngine:
         total_loc = 0
         total_complexity = 0
 
+        NON_CODE_EXTENSIONS = ('.json', '.md', '.txt', '.bat', '.css', '.scss', '.html', '.svg', '.png', '.jpg', '.lock', '.yaml', '.yml', '.toml')
         for file_obj in files:
             path = file_obj.get("path", "")
             code = file_obj.get("code", "")
+            if not code or any(path.lower().endswith(ext) for ext in NON_CODE_EXTENSIONS):
+                continue
             lines = code.splitlines()
             total_loc += len(lines)
 

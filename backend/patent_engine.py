@@ -36,7 +36,7 @@ class PatentGeneratorEngine:
 
         patent_title = f"System and Method for Automated Topological Reverse Engineering and Structural Synthesis of '{proj_name}'"
 
-        claims_markdown = f"""# 📜 USPTO Patent Application Specification — {proj_name}
+        claims_markdown = f"""# USPTO Patent Application Specification — {proj_name}
 
 **Patent Application Reference**: `US-PAT-{hash(proj_name) & 0xFFFFFFF:07X}`  
 **Invention Title**: **{patent_title}**  

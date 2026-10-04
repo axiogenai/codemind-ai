@@ -1,12 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { Download, Copy, Check, Loader2, Layers, FileText, Database, Compass, BookOpen } from 'lucide-react';
 import { fetchDoc } from '../services/api';
+import { useTheme } from '../context/ThemeContext';
+import { SpotlightCard } from './ui/SpotlightCard';
 
 interface DocGeneratorViewProps {
   projectId?: string;
 }
 
 export const DocGeneratorView: React.FC<DocGeneratorViewProps> = ({ projectId }) => {
+  const { isDarkMode } = useTheme();
   const [activeDoc, setActiveDoc] = useState<'architecture' | 'api' | 'database' | 'developer_guide'>('architecture');
   const [docContent, setDocContent] = useState<string>('');
   const [copied, setCopied] = useState<boolean>(false);
@@ -26,32 +29,60 @@ export const DocGeneratorView: React.FC<DocGeneratorViewProps> = ({ projectId })
   useEffect(() => {
     if (docContent) {
       import('mermaid').then(m => {
-        m.default.initialize({ startOnLoad: false, theme: 'dark', themeVariables: { darkMode: true, background: '#0A0A0A', primaryColor: '#3B82F6' } });
+        m.default.initialize({
+          startOnLoad: false,
+          theme: 'base',
+          themeVariables: isDarkMode ? {
+            darkMode: true,
+            background: '#0A0A0A',
+            mainBkg: '#121316',
+            clusterBkg: 'transparent',
+            clusterBorder: '#27272A',
+            nodeBorder: '#27272A',
+            lineColor: '#71717A',
+            textColor: '#E4E4E7',
+            primaryColor: '#18181B',
+            primaryTextColor: '#E4E4E7',
+            primaryBorderColor: '#27272A'
+          } : {
+            darkMode: false,
+            background: '#FFFFFF',
+            mainBkg: '#F4F4F5',
+            clusterBkg: '#FAFAFA',
+            clusterBorder: '#E4E4E7',
+            nodeBorder: '#D4D4D8',
+            lineColor: '#71717A',
+            textColor: '#18181B',
+            primaryColor: '#F4F4F5',
+            primaryTextColor: '#18181B',
+            primaryBorderColor: '#D4D4D8'
+          }
+        });
         m.default.run({ querySelector: '.markdown-content .mermaid' }).catch(() => {});
       });
     }
-  }, [docContent]);
+  }, [docContent, isDarkMode]);
 
   const formatInlineCode = (code: string) => {
     const trimmed = code.trim();
-    const baseStyle = "font-family: 'JetBrains Mono', monospace; font-size: 0.82em; font-weight: 500; padding: 0.2rem 0.5rem; border-radius: 0.375rem; display: inline-block; vertical-align: middle; letter-spacing: -0.01em;";
+    const baseStyle = "font-family: 'JetBrains Mono', monospace; font-size: 0.82em; font-weight: 600; padding: 0.18rem 0.45rem; border-radius: 0.375rem; display: inline-block; vertical-align: middle;";
 
     // HTTP methods & Status in API spec
     if (['GET', 'ACTIVE', '200 OK'].includes(trimmed)) {
-      return `<code class="rich-badge-emerald" style="${baseStyle} color: #34D399 !important; background: rgba(52, 211, 153, 0.1) !important; border: 1px solid rgba(52, 211, 153, 0.25) !important;">${trimmed}</code>`;
+      return `<code class="rich-badge-teal" style="${baseStyle} color: ${isDarkMode ? '#2DD4BF' : '#0D9488'} !important; background: ${isDarkMode ? 'rgba(45, 212, 191, 0.12)' : 'rgba(13, 148, 136, 0.1)'} !important; border: 1px solid ${isDarkMode ? 'rgba(45, 212, 191, 0.3)' : 'rgba(13, 148, 136, 0.25)'} !important;">${trimmed}</code>`;
     }
     if (['POST'].includes(trimmed)) {
-      return `<code class="rich-badge-blue" style="${baseStyle} color: #60A5FA !important; background: rgba(96, 165, 250, 0.1) !important; border: 1px solid rgba(96, 165, 250, 0.25) !important;">${trimmed}</code>`;
+      return `<code class="rich-badge-sky" style="${baseStyle} color: ${isDarkMode ? '#38BDF8' : '#0284C7'} !important; background: ${isDarkMode ? 'rgba(56, 189, 248, 0.12)' : 'rgba(2, 132, 199, 0.1)'} !important; border: 1px solid ${isDarkMode ? 'rgba(56, 189, 248, 0.3)' : 'rgba(2, 132, 199, 0.25)'} !important;">${trimmed}</code>`;
     }
     if (['PUT', 'PATCH'].includes(trimmed)) {
-      return `<code class="rich-badge-amber" style="${baseStyle} color: #FBBF24 !important; background: rgba(251, 191, 36, 0.1) !important; border: 1px solid rgba(251, 191, 36, 0.25) !important;">${trimmed}</code>`;
+      return `<code class="rich-badge-slate" style="${baseStyle} color: ${isDarkMode ? '#E4E4E7' : '#3F3F46'} !important; background: ${isDarkMode ? 'rgba(255, 255, 255, 0.08)' : 'rgba(113, 113, 122, 0.1)'} !important; border: 1px solid ${isDarkMode ? 'rgba(255, 255, 255, 0.15)' : 'rgba(113, 113, 122, 0.25)'} !important;">${trimmed}</code>`;
     }
     if (['DELETE'].includes(trimmed)) {
-      return `<code class="rich-badge-rose" style="${baseStyle} color: #FB7185 !important; background: rgba(251, 113, 133, 0.1) !important; border: 1px solid rgba(251, 113, 133, 0.25) !important;">${trimmed}</code>`;
+      return `<code class="rich-badge-rose" style="${baseStyle} color: ${isDarkMode ? '#FB7185' : '#E11D48'} !important; background: ${isDarkMode ? 'rgba(251, 113, 133, 0.12)' : 'rgba(225, 29, 72, 0.1)'} !important; border: 1px solid ${isDarkMode ? 'rgba(251, 113, 133, 0.3)' : 'rgba(225, 29, 72, 0.25)'} !important;">${trimmed}</code>`;
     }
 
-    // Unified, Ice Platinum / Titanium Silver for all source paths, symbols, utilities, and components
-    return `<code class="rich-code-token" style="${baseStyle} color: #E2E8F0 !important; background: #121316 !important; border: 1px solid rgba(255, 255, 255, 0.09) !important;">${trimmed}</code>`;
+    // Default code token
+    return `<code class="rich-code-token" style="${baseStyle} color: ${isDarkMode ? '#E4E4E7' : '#27272A'} !important; background: ${isDarkMode ? '#18181B' : '#F4F4F5'} !important; border: 1px solid ${isDarkMode ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.08)'} !important;">${trimmed}</code>`;
   };
 
   const renderMarkdown = (text: string) => {
@@ -75,7 +106,7 @@ export const DocGeneratorView: React.FC<DocGeneratorViewProps> = ({ projectId })
     processed = processed.replace(/^- (.*$)/gm, '<ul><li>$1</li></ul>');
     processed = processed.replace(/<\/ul>\s*<ul>/g, '');
 
-    // Parse tables with proper thead (th) and tbody (td) inside a studio-grade container
+    // Parse tables with proper thead (th) and tbody (td)
     processed = processed.replace(/((?:^\|[^\n]+\|\r?\n?)+)/gm, (tableBlock) => {
       const lines = tableBlock.trim().split(/\r?\n/).filter(l => l.trim().startsWith('|'));
       if (lines.length === 0) return '';
@@ -138,32 +169,32 @@ export const DocGeneratorView: React.FC<DocGeneratorViewProps> = ({ projectId })
   };
 
   return (
-    <div className="h-[calc(100vh-4rem)] p-6 space-y-6 flex flex-col">
+    <div className="h-[calc(100vh-4rem)] p-6 space-y-6 flex flex-col bg-zinc-50 dark:bg-[#0A0A0A] transition-colors duration-200">
       {/* Selector Header: Studio-Grade Precision Control Bar */}
-      <div className="bg-[#0D0E11] border border-white/[0.08] rounded-xl p-3.5 shadow-xl flex flex-wrap items-center justify-between gap-4">
-        <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-lg bg-[#151619] border border-white/[0.08] flex items-center justify-center text-indigo-400 shadow-inner">
-            <BookOpen className="w-4 h-4" />
+      <SpotlightCard className="p-5 md:p-6 rounded-2xl border border-zinc-200 dark:border-white/[0.08] shadow-xs flex flex-col xl:flex-row xl:items-center justify-between gap-5">
+        <div className="flex items-center gap-3.5">
+          <div className="w-10 h-10 rounded-xl bg-zinc-100 dark:bg-[#151619] border border-zinc-200 dark:border-white/[0.08] flex items-center justify-center text-zinc-700 dark:text-zinc-300 shadow-2xs shrink-0">
+            <BookOpen className="w-4 h-4 text-sky-600 dark:text-sky-400" />
           </div>
           <div>
-            <h3 className="text-sm font-semibold text-white tracking-tight flex items-center gap-2">
-              Automated Documentation Generator
-              <span className="text-[10px] font-medium font-mono px-2 py-0.5 rounded-md bg-[#151619] text-zinc-400 border border-white/[0.06]">
-                1-Click Export
+            <h3 className="text-sm font-bold text-zinc-900 dark:text-white tracking-tight flex items-center gap-2">
+              Automated Documentation Engine
+              <span className="text-[10px] font-semibold font-mono px-2 py-0.5 rounded-md bg-zinc-100 dark:bg-[#151619] text-zinc-600 dark:text-zinc-400 border border-zinc-200 dark:border-white/[0.06]">
+                Universal AST
               </span>
             </h3>
-            <p className="text-xs text-zinc-400 font-normal">Reverse engineered directly from Universal AST & Knowledge Graph</p>
+            <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-1">Reverse engineered directly from Universal AST & Knowledge Graph</p>
           </div>
         </div>
 
-        <div className="flex items-center space-x-3">
+        <div className="flex flex-wrap items-center gap-3 pt-1 xl:pt-0">
           {/* Segmented Tab Control */}
-          <div className="inline-flex items-center p-0.5 bg-[#151619] border border-white/[0.06] rounded-lg">
+          <div className="inline-flex items-center p-1 bg-zinc-100 dark:bg-[#151619] border border-zinc-200 dark:border-white/[0.06] rounded-xl gap-1">
             {[
-              { id: 'architecture', label: 'Architecture Blueprint', icon: Layers, color: '#38BDF8' },
-              { id: 'api', label: 'REST API Spec', icon: FileText, color: '#C084FC' },
-              { id: 'database', label: 'Database ERD', icon: Database, color: '#34D399' },
-              { id: 'developer_guide', label: 'Developer Onboarding', icon: Compass, color: '#FBBF24' }
+              { id: 'architecture', label: 'Architecture Blueprint', icon: Layers },
+              { id: 'api', label: 'REST API Spec', icon: FileText },
+              { id: 'database', label: 'Database ERD', icon: Database },
+              { id: 'developer_guide', label: 'Developer Onboarding', icon: Compass }
             ].map((tab) => {
               const isActive = activeDoc === tab.id;
               const Icon = tab.icon;
@@ -171,50 +202,49 @@ export const DocGeneratorView: React.FC<DocGeneratorViewProps> = ({ projectId })
                 <button
                   key={tab.id}
                   onClick={() => setActiveDoc(tab.id as any)}
-                  className={`px-3.5 py-1.5 rounded-md text-xs font-medium flex items-center gap-2 transition-all cursor-pointer select-none ${
+                  className={`px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-2 transition-all cursor-pointer select-none ${
                     isActive
-                      ? 'bg-[#24262B] text-zinc-100 shadow-xs border border-white/[0.08]'
-                      : 'text-zinc-400 hover:text-zinc-200 hover:bg-white/[0.03] border border-transparent'
+                      ? 'bg-white dark:bg-[#24262B] text-zinc-900 dark:text-zinc-100 shadow-2xs border border-zinc-200 dark:border-white/[0.08]'
+                      : 'text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-200 hover:bg-zinc-200/50 dark:hover:bg-white/[0.03] border border-transparent'
                   }`}
                 >
-                  <Icon
-                    className="w-3.5 h-3.5 transition-colors"
-                    style={{ color: isActive ? tab.color : undefined }}
-                  />
+                  <Icon className="w-3.5 h-3.5" />
                   <span>{tab.label}</span>
                 </button>
               );
             })}
           </div>
 
-          <button
-            onClick={handleCopy}
-            className="flex items-center space-x-1.5 px-3 py-1.5 rounded-lg bg-[#151619] hover:bg-[#1E2024] border border-white/[0.08] text-xs font-medium text-zinc-300 hover:text-white transition-all cursor-pointer"
-          >
-            {copied ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5 text-zinc-400" />}
-            <span>{copied ? 'Copied' : 'Copy'}</span>
-          </button>
+          <div className="flex items-center space-x-2">
+            <button
+              onClick={handleCopy}
+              className="flex items-center space-x-1.5 px-3 py-1.5 rounded-xl bg-white dark:bg-[#151619] hover:bg-zinc-100 dark:hover:bg-[#1E2024] border border-zinc-200 dark:border-white/[0.08] text-xs font-semibold text-zinc-700 dark:text-zinc-300 hover:text-zinc-900 dark:hover:text-white transition-all cursor-pointer shadow-2xs"
+            >
+              {copied ? <Check className="w-3.5 h-3.5 text-teal-600 dark:text-teal-400" /> : <Copy className="w-3.5 h-3.5 text-zinc-400" />}
+              <span>{copied ? 'Copied' : 'Copy'}</span>
+            </button>
 
-          <button
-            onClick={handleDownload}
-            className="flex items-center space-x-1.5 px-3.5 py-1.5 rounded-lg bg-zinc-100 text-zinc-900 font-medium text-xs hover:bg-white border border-zinc-300 transition-all cursor-pointer shadow-xs"
-          >
-            <Download className="w-3.5 h-3.5" />
-            <span>Export Markdown</span>
-          </button>
+            <button
+              onClick={handleDownload}
+              className="flex items-center space-x-1.5 px-3.5 py-1.5 rounded-xl bg-zinc-900 hover:bg-zinc-800 text-white dark:bg-white dark:hover:bg-zinc-200 dark:text-zinc-950 font-semibold text-xs border border-transparent transition-all cursor-pointer shadow-xs hover:scale-[1.01]"
+            >
+              <Download className="w-3.5 h-3.5" />
+              <span>Export Markdown</span>
+            </button>
+          </div>
         </div>
-      </div>
+      </SpotlightCard>
 
       {/* Main Document Viewer */}
-      <div className="flex-1 bg-[#0A0A0A] rounded-xl p-8 overflow-y-auto border border-white/[0.08] text-gray-200">
+      <div className="flex-1 bg-white dark:bg-[#0A0A0A] rounded-2xl p-8 overflow-y-auto border border-zinc-200 dark:border-white/[0.08] text-zinc-800 dark:text-zinc-200 shadow-xs custom-scrollbar">
         {loading ? (
           <div className="flex flex-col items-center justify-center h-full space-y-4 text-center p-8">
-            <div className="w-14 h-14 rounded-2xl bg-neutral-900 border border-neutral-800 flex items-center justify-center">
-              <Loader2 className="w-6 h-6 text-neutral-300 animate-spin" />
+            <div className="w-12 h-12 rounded-2xl bg-zinc-100 dark:bg-neutral-900 border border-zinc-200 dark:border-neutral-800 flex items-center justify-center">
+              <Loader2 className="w-5 h-5 text-zinc-600 dark:text-zinc-300 animate-spin" />
             </div>
             <div className="space-y-1">
-              <h4 className="text-sm font-extrabold text-white">Generating Universal Documentation</h4>
-              <p className="text-xs text-gray-400">Synthesizing AST dependencies, APIs, and ERD relations...</p>
+              <h4 className="text-sm font-bold text-zinc-900 dark:text-white">Generating Universal Documentation</h4>
+              <p className="text-xs text-zinc-500 dark:text-zinc-400">Synthesizing AST dependencies, APIs, and ERD relations...</p>
             </div>
           </div>
         ) : (

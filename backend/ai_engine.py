@@ -362,7 +362,7 @@ Repository '{proj_name}' Code Context:
             imports = symbols.get("imports", [])
             apis = symbols.get("apis", [])
 
-            local_insights.append(f"### 📂 Summary for `{p}`")
+            local_insights.append(f"### Summary for `{p}`")
             if target_type:
                 local_insights.append(f"- **Symbol Type**: `{target_type}`")
             if classes:
@@ -383,7 +383,7 @@ Repository '{proj_name}' Code Context:
                 preview_lines = code_sample.splitlines()[:15]
                 local_insights.append("\n**Code Preview:**\n```\n" + "\n".join(preview_lines) + "\n```")
         elif results:
-            local_insights.append(f"### 🔍 Codebase Search Results for '{query}'")
+            local_insights.append(f"### Codebase Search Results for '{query}'")
             for doc in results[:3]:
                 p = doc.get("path", "")
                 syms = doc.get("symbols", {})
@@ -395,7 +395,7 @@ Repository '{proj_name}' Code Context:
             local_insights.append(f"Found {len(files)} files in repository **{proj_name}**.")
 
         local_answer = "\n".join(local_insights)
-        local_answer += "\n\n> 💡 *Tip: To unlock autonomous conversational reasoning and deep multi-step code generation, you can configure an API key (Groq / Gemini) in the top settings.*"
+        local_answer += "\n\n> *Tip: To unlock autonomous conversational reasoning and deep multi-step code generation, you can configure an API key (Groq / Gemini) in the top settings.*"
 
         return {
             "query": query,
