@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700&family=Outfit:wght@500;600;700;800&family=Space+Grotesk:wght@600;700;800&family=Unbounded:wght@600;700;800;900&family=Syne:wght@700;800&display=swap');
 @import "tailwindcss";
 @plugin "@tailwindcss/typography";
 
@@ -23,6 +23,7 @@
   --accent-amber: #71717A;
   --accent-sky: #0284C7;
   --accent-slate: #475569;
+  --ring-track: #E2E8F0;
   --chart-1: #0284C7;
   --chart-2: #475569;
   --chart-3: #71717A;
@@ -43,6 +44,7 @@
   --accent-amber: #A1A1AA;
   --accent-sky: #38BDF8;
   --accent-slate: #94A3B8;
+  --ring-track: rgba(255, 255, 255, 0.20);
   --chart-1: #38BDF8;
   --chart-2: #94A3B8;
   --chart-3: #A1A1AA;
@@ -454,7 +456,31 @@ aside {
   background: rgba(255, 255, 255, 0.035);
 }
 
-.markdown-content .mermaid { display: flex; justify-content: center; margin: 1rem 0; }
+.markdown-content .mermaid {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+  overflow-x: auto;
+}
+
+.markdown-content .mermaid svg {
+  max-width: 100%;
+  height: auto;
+  min-height: 240px;
+}
+
+.mermaid-blueprint-card {
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.mermaid-blueprint-card:hover {
+  border-color: rgba(0, 0, 0, 0.15);
+}
+
+.dark .mermaid-blueprint-card:hover {
+  border-color: rgba(255, 255, 255, 0.14);
+}
 
 /* AI Chat Formatting */
 .ai-response strong { color: #18181B; font-weight: 700; }
@@ -533,3 +559,14 @@ aside {
   font-size: 10px !important;
   font-weight: 500 !important;
 }
+
+/* Remove default browser focus outline rectangle on buttons */
+button, input, select, textarea, [role="button"] {
+  outline: none !important;
+}
+
+button:focus, button:focus-visible {
+  outline: none !important;
+  box-shadow: none !important;
+}
+

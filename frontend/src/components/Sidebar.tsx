@@ -135,16 +135,23 @@ export const Sidebar: React.FC<SidebarProps> = ({
                       setActiveTab(item.id);
                       if (onCloseMobile) onCloseMobile();
                     }}
-                    className={`w-full flex items-center justify-between px-2.5 py-2 rounded-xl text-xs transition-all duration-150 cursor-pointer group ${
+                    className={`relative w-full flex items-center justify-between px-2.5 py-2 rounded-xl text-xs transition-all duration-150 cursor-pointer group ${
                       isActive
-                        ? 'bg-zinc-100 dark:bg-[#18191E] text-zinc-900 dark:text-white font-bold border border-zinc-200 dark:border-white/[0.1] shadow-2xs'
-                        : 'text-zinc-600 dark:text-zinc-400 font-medium hover:text-zinc-900 dark:hover:text-zinc-200 hover:bg-zinc-100/70 dark:hover:bg-white/[0.04] border border-transparent'
+                        ? 'bg-zinc-900 dark:bg-white/[0.10] text-white dark:text-white font-bold'
+                        : 'text-zinc-600 dark:text-zinc-400 font-medium hover:text-zinc-900 dark:hover:text-zinc-200 hover:bg-zinc-100/70 dark:hover:bg-white/[0.04]'
                     }`}
                   >
+                    {/* Left accent bar — only shown when active */}
+                    {isActive && (
+                      <span className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-5 rounded-full bg-white dark:bg-white" />
+                    )}
+
                     <div className="flex items-center space-x-2.5 min-w-0">
                       <Icon
                         className={`w-4 h-4 shrink-0 transition-colors ${
-                          isActive ? 'text-zinc-900 dark:text-white' : 'text-zinc-400 dark:text-zinc-500 group-hover:text-zinc-700 dark:group-hover:text-zinc-300'
+                          isActive
+                            ? 'text-white dark:text-white'
+                            : 'text-zinc-400 dark:text-zinc-500 group-hover:text-zinc-700 dark:group-hover:text-zinc-300'
                         }`}
                       />
                       <span className="tracking-tight whitespace-nowrap overflow-hidden text-ellipsis">
@@ -166,7 +173,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                       )}
                       {item.shortcut && (
                         <span className={`text-[10px] font-mono px-1 py-0.2 rounded opacity-0 group-hover:opacity-60 transition-opacity ${
-                          isActive ? 'opacity-70 text-zinc-500 dark:text-zinc-400' : 'text-zinc-400'
+                          isActive ? 'opacity-70 text-zinc-400 dark:text-zinc-400' : 'text-zinc-400'
                         }`}>
                           {item.shortcut}
                         </span>

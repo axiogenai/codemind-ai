@@ -14,14 +14,23 @@
     </linearGradient>
   </defs>
 
+  <!-- Top Facet: Code Architecture & AST -->
   <path d="M 24 6 L 39.5 15 L 24 24 L 8.5 15 Z" fill="url(#cm-top)" />
+  
+  <!-- Left Facet: Neural Graph & Intelligence Engine -->
   <path d="M 8.5 15 L 24 24 L 24 42 L 8.5 33 Z" fill="url(#cm-left)" />
+
+  <!-- Right Facet: Reverse Engineering & Repository Transformation -->
   <path d="M 24 24 L 39.5 15 L 39.5 33 L 24 42 Z" fill="url(#cm-right)" />
 
+  <!-- Negative Space Channels -->
   <path d="M 24 6 L 24 24 M 8.5 15 L 24 24 M 39.5 15 L 24 24 M 24 24 L 24 42" 
         stroke="#0A0A0A" stroke-width="1.8" stroke-linejoin="round" />
 
+  <!-- Central Nexus Core -->
   <circle cx="24" cy="24" r="2.2" fill="#FFFFFF" />
+
+  <!-- AST Branching Connection Nodes on Vertices -->
   <circle cx="24" cy="6" r="1.5" fill="#38BDF8" />
   <circle cx="39.5" cy="15" r="1.5" fill="#6366F1" />
   <circle cx="39.5" cy="33" r="1.5" fill="#7C3AED" />

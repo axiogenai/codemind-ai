@@ -32,30 +32,37 @@ export const DocGeneratorView: React.FC<DocGeneratorViewProps> = ({ projectId })
         m.default.initialize({
           startOnLoad: false,
           theme: 'base',
+          flowchart: {
+            diagramPadding: 24,
+            nodeSpacing: 28,
+            rankSpacing: 22,
+            htmlLabels: false,
+            curve: 'linear'
+          },
           themeVariables: isDarkMode ? {
             darkMode: true,
-            background: '#0A0A0A',
-            mainBkg: '#121316',
-            clusterBkg: 'transparent',
+            background: 'transparent',
+            mainBkg: '#141518',
+            clusterBkg: 'rgba(255, 255, 255, 0.02)',
             clusterBorder: '#27272A',
-            nodeBorder: '#27272A',
+            nodeBorder: '#3F3F46',
             lineColor: '#71717A',
             textColor: '#E4E4E7',
-            primaryColor: '#18181B',
+            primaryColor: '#18191E',
             primaryTextColor: '#E4E4E7',
-            primaryBorderColor: '#27272A'
+            primaryBorderColor: '#3F3F46'
           } : {
             darkMode: false,
-            background: '#FFFFFF',
-            mainBkg: '#F4F4F5',
-            clusterBkg: '#FAFAFA',
-            clusterBorder: '#E4E4E7',
-            nodeBorder: '#D4D4D8',
-            lineColor: '#71717A',
-            textColor: '#18181B',
-            primaryColor: '#F4F4F5',
-            primaryTextColor: '#18181B',
-            primaryBorderColor: '#D4D4D8'
+            background: 'transparent',
+            mainBkg: '#F8FAFC',
+            clusterBkg: 'rgba(0, 0, 0, 0.01)',
+            clusterBorder: '#E2E8F0',
+            nodeBorder: '#CBD5E1',
+            lineColor: '#64748B',
+            textColor: '#0F172A',
+            primaryColor: '#F8FAFC',
+            primaryTextColor: '#0F172A',
+            primaryBorderColor: '#CBD5E1'
           }
         });
         m.default.run({ querySelector: '.markdown-content .mermaid' }).catch(() => {});
@@ -144,9 +151,12 @@ export const DocGeneratorView: React.FC<DocGeneratorViewProps> = ({ projectId })
 
     processed = processed.replace(/\n\n+/g, '</p><p>');
 
-    // Re-insert clean Mermaid blocks
+    // Re-insert clean Mermaid blocks with blueprint container
     mermaidBlocks.forEach((code, idx) => {
-      processed = processed.replace(`___MERMAID_BLOCK_${idx}___`, `<div class="mermaid">${code}</div>`);
+      processed = processed.replace(
+        `___MERMAID_BLOCK_${idx}___`,
+        `<div class="mermaid-blueprint-card my-6 rounded-2xl border border-zinc-200 dark:border-white/[0.08] bg-zinc-50/70 dark:bg-[#111215]/80 p-5 shadow-xs overflow-x-auto"><div class="flex items-center justify-between gap-2 mb-3 pb-2.5 border-b border-zinc-200/80 dark:border-white/[0.06]"><span class="text-[11px] font-semibold tracking-wider uppercase text-zinc-500 dark:text-zinc-400">Interactive Architectural Blueprint</span><span class="text-[10px] font-mono font-medium px-2 py-0.5 rounded bg-zinc-200/60 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300">Mermaid SVG</span></div><div class="mermaid flex justify-center py-2">${code}</div></div>`
+      );
     });
 
     return processed;
@@ -226,7 +236,7 @@ export const DocGeneratorView: React.FC<DocGeneratorViewProps> = ({ projectId })
 
             <button
               onClick={handleDownload}
-              className="flex items-center space-x-1.5 px-3.5 py-1.5 rounded-xl bg-zinc-900 hover:bg-zinc-800 text-white dark:bg-white dark:hover:bg-zinc-200 dark:text-zinc-950 font-semibold text-xs border border-transparent transition-all cursor-pointer shadow-xs hover:scale-[1.01]"
+              className="flex items-center space-x-1.5 px-3.5 py-1.5 rounded-xl bg-zinc-900 hover:bg-zinc-800 text-white dark:bg-white dark:hover:bg-zinc-200 dark:text-zinc-950 font-semibold text-xs border border-transparent transition-colors cursor-pointer shadow-xs outline-none focus:outline-none focus:ring-0 select-none"
             >
               <Download className="w-3.5 h-3.5" />
               <span>Export Markdown</span>

@@ -47,9 +47,6 @@ class DocumentationGeneratorEngine:
         # Build dynamic Mermaid Dependency Diagram
         markdown += "### Architectural Module Dependency Map\n"
         markdown += "```mermaid\ngraph TD\n"
-        markdown += "    classDef fileNode fill:#1E293B,stroke:#38BDF8,stroke-width:1px,color:#F8FAFC;\n"
-        markdown += "    classDef apiNode fill:#451A03,stroke:#F59E0B,stroke-width:1.5px,color:#FDE68A;\n"
-        markdown += "    classDef dbNode fill:#064E3B,stroke:#10B981,stroke-width:1.5px,color:#A7F3D0;\n\n"
 
         nodes = graph_data.get("nodes", [])
         links = graph_data.get("links", [])
@@ -73,14 +70,87 @@ class DocumentationGeneratorEngine:
                 return True
             return False
 
-        # Pick key source code files, filtering out config junk
-        file_nodes = [n for n in nodes if n.get("type") == "File" and not _is_config_file(n.get("label", "").split("/")[-1])][:18]
-        # If filtering removed everything, fall back to unfiltered
-        if not file_nodes:
-            file_nodes = [n for n in nodes if n.get("type") == "File"][:12]
-        file_ids = set(n["id"] for n in file_nodes)
+        # Classify files into structured architectural tiers for a clean, compact blueprint
+        source_files = [f for f in files if not _is_config_file(f.get("path", "").split("/")[-1])]
+        if not source_files:
+            source_files = files[:]
 
-        # Deterministic Mermaid-safe identifier generator: guarantees source and target use exact same ID
+        def symbol_score(f: Dict[str, Any]) -> int:
+            syms = f.get("symbols", {})
+            return (
+                len(syms.get("apis", [])) * 8 +
+                len(syms.get("classes", [])) * 4 +
+                len(syms.get("functions", [])) * 2 +
+                min(f.get("lines", 0) // 50, 10)
+            )
+
+        tier1_entry: List[Dict[str, Any]] = []    # 1. Presentation
+        tier2_routing: List[Dict[str, Any]] = []  # 2. API & Gateway
+        tier3_engines: List[Dict[str, Any]] = []  # 3. Core Logic & Engines
+        tier4_data: List[Dict[str, Any]] = []     # 4. AST Memory & Storage
+
+        for f in source_files:
+            p_lower = f.get("path", "").lower()
+            fname = p_lower.split("/")[-1]
+            syms = f.get("symbols", {})
+
+            # Filter out non-architectural leaf files from presentation
+            is_primitive_leaf = any(x in p_lower for x in ["/ui/", "/charts/", "/effects/"]) and not any(fname.startswith(k) for k in ["app.", "main.", "overview"])
+
+            if any(k in fname for k in ["store", "memory", "db", "database", "model", "schema", "ast_normalizer", "graph_builder", "repo_store", "vector", "types"]) or "/types/" in p_lower:
+                tier4_data.append(f)
+            elif syms.get("apis") or any(k in fname for k in ["route", "router", "controller", "endpoint", "api"]):
+                tier2_routing.append(f)
+            elif any(k in fname for k in ["engine", "service", "analyzer", "scanner", "simulator", "predictor", "generator", "ai_", "transformer", "reviewer"]):
+                tier3_engines.append(f)
+            elif (any(fname.startswith(k) for k in ["app.", "main.", "server.", "cli.", "overview"]) or any(k in p_lower for k in ["/components/", "/pages/", "/views/"])) and not is_primitive_leaf:
+                tier1_entry.append(f)
+            else:
+                if syms.get("classes"):
+                    tier3_engines.append(f)
+                else:
+                    tier1_entry.append(f)
+
+        # Prioritize primary application entrypoints for Tier 1
+        def tier1_priority(f):
+            fname = f.get("path", "").split("/")[-1].lower()
+            if any(fname.startswith(k) for k in ["app.", "main.", "index.html"]): return 1000 + symbol_score(f)
+            if "overview" in fname: return 800 + symbol_score(f)
+            return symbol_score(f)
+
+        tier1_entry.sort(key=tier1_priority, reverse=True)
+        tier2_routing.sort(key=symbol_score, reverse=True)
+        tier3_engines.sort(key=symbol_score, reverse=True)
+        tier4_data.sort(key=symbol_score, reverse=True)
+
+        used_paths = set()
+        def take_unique(tier_list, max_n):
+            picked = []
+            for item in tier_list:
+                p = item.get("path")
+                if p not in used_paths:
+                    used_paths.add(p)
+                    picked.append(item)
+                    if len(picked) >= max_n:
+                        break
+            return picked
+
+        sel_tier1 = take_unique(tier1_entry, 2)
+        if not sel_tier1 and source_files:
+            sel_tier1 = take_unique(source_files, 2)
+
+        sel_tier2 = take_unique(tier2_routing, 2)
+        if not sel_tier2 and len(source_files) > len(used_paths):
+            sel_tier2 = take_unique([f for f in source_files if f.get("path") not in used_paths], 2)
+
+        sel_tier3 = take_unique(tier3_engines, 2)
+        if not sel_tier3 and len(source_files) > len(used_paths):
+            sel_tier3 = take_unique([f for f in source_files if f.get("path") not in used_paths], 2)
+
+        sel_tier4 = take_unique(tier4_data, 2)
+        if not sel_tier4 and len(source_files) > len(used_paths):
+            sel_tier4 = take_unique([f for f in source_files if f.get("path") not in used_paths], 2)
+
         id_map = {}
         def clean_id(raw_id: str) -> str:
             if raw_id in id_map:
@@ -98,31 +168,84 @@ class DocumentationGeneratorEngine:
             return clean
 
         def safe_label(raw: str) -> str:
-            """Escape characters that break Mermaid quoted labels"""
             return raw.replace('"', "'").replace('<', '‹').replace('>', '›').replace('&', '+')
 
-        for fn in file_nodes:
-            short_name = fn['label'].split('/')[-1]
-            cid = clean_id(fn['id'])
-            lbl = safe_label(short_name)
-            markdown += f'    {cid}["{lbl}"]:::fileNode\n'
+        # Compact, high-contrast theme classes
+        markdown += "    classDef clientNode fill:#0284C7,stroke:#38BDF8,stroke-width:1.5px,color:#FFFFFF;\n"
+        markdown += "    classDef entryNode fill:#1E293B,stroke:#38BDF8,stroke-width:1.5px,color:#F8FAFC;\n"
+        markdown += "    classDef apiNode fill:#312E81,stroke:#818CF8,stroke-width:1.5px,color:#EEF2FF;\n"
+        markdown += "    classDef engineNode fill:#0F172A,stroke:#64748B,stroke-width:1.5px,color:#F1F5F9;\n"
+        markdown += "    classDef dataNode fill:#064E3B,stroke:#10B981,stroke-width:1.5px,color:#ECFDF5;\n\n"
 
-        added_edges = set()
-        edge_count = 0
-        for link in links:
-            s_id = link.get("source")
-            t_id = link.get("target")
-            if isinstance(s_id, dict): s_id = s_id.get("id")
-            if isinstance(t_id, dict): t_id = t_id.get("id")
+        markdown += '    Client["Client / User Interface"]:::clientNode\n\n'
 
-            # Check if source and target match any of our displayed file nodes
-            if s_id and t_id and s_id in file_ids and t_id in file_ids and s_id != t_id:
-                edge_key = (s_id, t_id)
-                if edge_key not in added_edges and edge_count < 30:
-                    added_edges.add(edge_key)
-                    rel = safe_label(link.get("relation", "DEPENDS_ON"))
-                    markdown += f"    {clean_id(s_id)} -->|{rel}| {clean_id(t_id)}\n"
-                    edge_count += 1
+        # Tier 1 Subgraph
+        t1_ids = []
+        if sel_tier1:
+            markdown += '    subgraph T1 ["1. Presentation Layer"]\n'
+            for f in sel_tier1:
+                cid = clean_id(f.get("path", ""))
+                lbl = safe_label(f.get("path", "").split("/")[-1])
+                t1_ids.append(cid)
+                markdown += f'        {cid}["{lbl}"]:::entryNode\n'
+            markdown += '    end\n\n'
+
+        # Tier 2 Subgraph
+        t2_ids = []
+        if sel_tier2:
+            markdown += '    subgraph T2 ["2. API & Gateway Layer"]\n'
+            for f in sel_tier2:
+                cid = clean_id(f.get("path", ""))
+                lbl = safe_label(f.get("path", "").split("/")[-1])
+                t2_ids.append(cid)
+                markdown += f'        {cid}["{lbl}"]:::apiNode\n'
+            markdown += '    end\n\n'
+
+        # Tier 3 Subgraph
+        t3_ids = []
+        if sel_tier3:
+            markdown += '    subgraph T3 ["3. Core Logic & Engines"]\n'
+            for f in sel_tier3:
+                cid = clean_id(f.get("path", ""))
+                lbl = safe_label(f.get("path", "").split("/")[-1])
+                t3_ids.append(cid)
+                markdown += f'        {cid}["{lbl}"]:::engineNode\n'
+            markdown += '    end\n\n'
+
+        # Tier 4 Subgraph
+        t4_ids = []
+        if sel_tier4:
+            markdown += '    subgraph T4 ["4. AST & Data Store"]\n'
+            for f in sel_tier4:
+                cid = clean_id(f.get("path", ""))
+                lbl = safe_label(f.get("path", "").split("/")[-1])
+                t4_ids.append(cid)
+                markdown += f'        {cid}["{lbl}"]:::dataNode\n'
+            markdown += '    end\n\n'
+
+        # Clean vertical dual-spine flow (Primary on left, Secondary on right)
+        if t1_ids:
+            markdown += f'    Client --> {t1_ids[0]}\n'
+            if len(t1_ids) > 1:
+                markdown += f'    Client -.-> {t1_ids[1]}\n'
+
+        # Flow from T1 -> T2
+        if t1_ids and t2_ids:
+            markdown += f'    {t1_ids[0]} -->|HTTP REST| {t2_ids[0]}\n'
+            if len(t1_ids) > 1 and len(t2_ids) > 1:
+                markdown += f'    {t1_ids[1]} -.-> {t2_ids[1]}\n'
+
+        # Flow from T2 -> T3
+        if t2_ids and t3_ids:
+            markdown += f'    {t2_ids[0]} -->|Dispatches| {t3_ids[0]}\n'
+            if len(t2_ids) > 1 and len(t3_ids) > 1:
+                markdown += f'    {t2_ids[1]} -.-> {t3_ids[1]}\n'
+
+        # Flow from T3 -> T4
+        if t3_ids and t4_ids:
+            markdown += f'    {t3_ids[0]} -->|Queries & Persists| {t4_ids[0]}\n'
+            if len(t3_ids) > 1 and len(t4_ids) > 1:
+                markdown += f'    {t3_ids[1]} -.-> {t4_ids[1]}\n'
 
         markdown += "```\n\n"
 

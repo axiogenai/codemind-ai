@@ -12,13 +12,15 @@ import { DocGeneratorView } from './components/DocGeneratorView';
 import { CodeExplorerView } from './components/CodeExplorerView';
 import { ProjectImporterModal } from './components/ProjectImporterModal';
 import { SpotlightCard } from './components/ui/SpotlightCard';
-import { ThreeParticleField } from './components/ui/ThreeParticleField';
+import { PredictiveArcCanvas } from './components/effects/predictive-arc/PredictiveArcCanvas';
+import './components/effects/predictive-arc/styles.css';
 
 // Phase 2 Repository Transformation Engine
 import { TransformationEngineView } from './components/TransformationEngineView';
 
 import type { ProjectMeta, ProjectFile, KnowledgeGraphData, SecurityReport } from './types';
-import { FolderSearch, Cpu, ShieldCheck, Zap, Globe, ArrowRight } from 'lucide-react';
+import { FolderOpen, Upload, Globe, ArrowRight } from 'lucide-react';
+import { CodeMindLogo } from './components/CodeMindLogo';
 import { fetchProjects, scanLocalDirectory, uploadProjectZip, scrapeWebsiteUrl, analyzeProject } from './services/api';
 
 export function App() {
@@ -43,6 +45,7 @@ export function App() {
   // Importer state for full-page onboarding
   const [landingTab, setLandingTab] = useState<'local' | 'upload' | 'url'>('local');
   const [localDirInput, setLocalDirInput] = useState('');
+  const [selectedZipFile, setSelectedZipFile] = useState<File | null>(null);
   const [websiteUrlInput, setWebsiteUrlInput] = useState('');
   const [isImporting, setIsImporting] = useState(false);
   const [importError, setImportError] = useState('');
@@ -168,86 +171,105 @@ export function App() {
         {/* Dynamic Workspace View */}
         <main className={`flex-1 relative bg-zinc-50 dark:bg-[#0A0A0A] min-h-0 transition-colors duration-200 ${['diagrams', 'graph'].includes(activeTab) ? 'overflow-hidden' : 'overflow-y-auto'}`}>
           {!currentProject ? (
-            /* Dedicated Interactive Full-Screen Importer Hub - ThreeUI + Magic UI Archetype */
-            <div className="min-h-full flex flex-col items-center justify-center p-6 md:p-12 bg-zinc-50 dark:bg-[#0A0A0A] transition-colors duration-200 relative overflow-hidden">
-              <ThreeParticleField count={450} className="opacity-70" />
-              <div className="max-w-2xl w-full space-y-8 animate-in fade-in duration-200 relative z-10">
+            /* Dedicated Interactive Full-Screen Importer Hub - Precision Balanced Layout */
+            <div className="min-h-full w-full flex flex-col items-center justify-start sm:justify-center p-4 sm:p-6 md:p-8 bg-zinc-50 dark:bg-[#0A0A0A] transition-colors duration-200 relative overflow-y-auto">
+              <div className="shader-frame">
+                <PredictiveArcCanvas
+                  variant="signal-particles"
+                  speed={1.00}
+                  hue={0}
+                  saturation={1.00}
+                  brightness={1.00}
+                />
+              </div>
+              <div className="max-w-xl w-full my-auto space-y-6 sm:space-y-7 animate-in fade-in duration-200 relative z-10 py-4 sm:py-6">
                 {/* Hero Title */}
-                <div className="text-center space-y-3">
-                  <div className="w-16 h-16 rounded-3xl bg-white dark:bg-[#141518] border border-zinc-200 dark:border-white/[0.08] flex items-center justify-center mx-auto text-zinc-800 dark:text-zinc-200 shadow-sm">
-                    <Cpu className="w-8 h-8 text-zinc-900 dark:text-white" />
+                <div className="text-center space-y-3 flex flex-col items-center">
+                  <div className="w-14 h-14 rounded-2xl bg-white dark:bg-[#141518] border border-zinc-200/80 dark:border-white/[0.08] p-2.5 flex items-center justify-center shadow-xs">
+                    <CodeMindLogo className="w-full h-full" />
                   </div>
-                  <div className="inline-flex items-center space-x-2 px-3 py-1 rounded-full text-[11px] font-semibold bg-zinc-100 dark:bg-zinc-900 text-zinc-700 dark:text-zinc-300 border border-zinc-200 dark:border-white/[0.08]">
-                    <span className="w-2 h-2 rounded-full bg-teal-500 ring-2 ring-teal-500/20" />
-                    <span>STANDALONE CODE INTELLIGENCE PLATFORM</span>
+                  <div className="inline-flex items-center justify-center gap-3.5 select-none py-1">
+                    <span className="w-8 sm:w-12 h-[1px] bg-zinc-300 dark:bg-zinc-800" />
+                    <span className="text-[11px] sm:text-xs font-mono font-medium tracking-[0.2em] uppercase text-zinc-600 dark:text-zinc-400">
+                      Code Intelligence & Reverse Engineering
+                    </span>
+                    <span className="w-8 sm:w-12 h-[1px] bg-zinc-300 dark:bg-zinc-800" />
                   </div>
-                  <h2 className="text-3xl font-bold text-zinc-900 dark:text-white tracking-tight">
+                  <h1 
+                    className="text-2xl sm:text-3xl font-extrabold text-zinc-900 dark:text-white tracking-tight leading-tight"
+                    style={{ fontFamily: "'Unbounded', sans-serif", letterSpacing: '-0.03em' }}
+                  >
                     Import Codebase to Begin
-                  </h2>
+                  </h1>
                   <p className="text-xs sm:text-sm text-zinc-500 dark:text-zinc-400 max-w-md mx-auto leading-relaxed">
                     Scan a local repository on disk, upload a ZIP archive, or reverse engineer a web URL to unlock deep AST graphs and code intelligence.
                   </p>
                 </div>
 
                 {/* Importer Card Container - Spotlight Card */}
-                <SpotlightCard className="p-6 sm:p-7 rounded-3xl space-y-5">
+                <SpotlightCard className="p-5 sm:p-6 rounded-2xl border border-zinc-200/80 dark:border-white/[0.08] bg-white/70 dark:bg-[#111215]/80 backdrop-blur-xl shadow-xs space-y-4">
                   {/* Tab Selector */}
-                  <div className="flex items-center p-1 rounded-xl bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-white/[0.08] gap-1">
+                  <div className="grid grid-cols-3 p-1 rounded-xl bg-zinc-100/90 dark:bg-zinc-900/90 border border-zinc-200/80 dark:border-white/[0.06] gap-1 mb-4 sm:mb-4.5">
                     <button
+                      type="button"
                       onClick={() => { setLandingTab('local'); setImportError(''); }}
-                      className={`flex-1 py-2 rounded-lg text-xs font-semibold transition-all cursor-pointer flex items-center justify-center space-x-2 ${
+                      className={`py-2 rounded-lg text-xs font-semibold transition-all cursor-pointer flex items-center justify-center space-x-1.5 outline-none focus:outline-none focus:ring-0 select-none ${
                         landingTab === 'local'
-                          ? 'bg-white dark:bg-[#141518] text-zinc-900 dark:text-white shadow-2xs border border-zinc-200 dark:border-white/[0.08]'
-                          : 'text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white'
+                          ? 'bg-white dark:bg-zinc-800 text-zinc-900 dark:text-white shadow-2xs border border-zinc-200/80 dark:border-zinc-700/60'
+                          : 'text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white border border-transparent'
                       }`}
                     >
-                      <FolderSearch className="w-4 h-4 text-sky-600 dark:text-sky-400" />
-                      <span>Local Folder</span>
+                      <FolderOpen className="w-4 h-4 text-sky-500 dark:text-sky-400 shrink-0" strokeWidth={2} />
+                      <span className="truncate">Local Folder</span>
                     </button>
                     <button
+                      type="button"
                       onClick={() => { setLandingTab('upload'); setImportError(''); }}
-                      className={`flex-1 py-2 rounded-lg text-xs font-semibold transition-all cursor-pointer flex items-center justify-center space-x-2 ${
+                      className={`py-2 rounded-lg text-xs font-semibold transition-all cursor-pointer flex items-center justify-center space-x-1.5 outline-none focus:outline-none focus:ring-0 select-none ${
                         landingTab === 'upload'
-                          ? 'bg-white dark:bg-[#141518] text-zinc-900 dark:text-white shadow-2xs border border-zinc-200 dark:border-white/[0.08]'
-                          : 'text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white'
+                          ? 'bg-white dark:bg-zinc-800 text-zinc-900 dark:text-white shadow-2xs border border-zinc-200/80 dark:border-zinc-700/60'
+                          : 'text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white border border-transparent'
                       }`}
                     >
-                      <Zap className="w-4 h-4 text-zinc-700 dark:text-zinc-300" />
-                      <span>Upload ZIP</span>
+                      <Upload className="w-4 h-4 text-indigo-500 dark:text-indigo-400 shrink-0" strokeWidth={2} />
+                      <span className="truncate">Upload ZIP</span>
                     </button>
                     <button
+                      type="button"
                       onClick={() => { setLandingTab('url'); setImportError(''); }}
-                      className={`flex-1 py-2 rounded-lg text-xs font-semibold transition-all cursor-pointer flex items-center justify-center space-x-2 ${
+                      className={`py-2 rounded-lg text-xs font-semibold transition-all cursor-pointer flex items-center justify-center space-x-1.5 outline-none focus:outline-none focus:ring-0 select-none ${
                         landingTab === 'url'
-                          ? 'bg-white dark:bg-[#141518] text-zinc-900 dark:text-white shadow-2xs border border-zinc-200 dark:border-white/[0.08]'
-                          : 'text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white'
+                          ? 'bg-white dark:bg-zinc-800 text-zinc-900 dark:text-white shadow-2xs border border-zinc-200/80 dark:border-zinc-700/60'
+                          : 'text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white border border-transparent'
                       }`}
                     >
-                      <Globe className="w-4 h-4 text-teal-600 dark:text-teal-400" />
-                      <span>Web / URL</span>
+                      <Globe className="w-4 h-4 text-emerald-500 dark:text-emerald-400 shrink-0" strokeWidth={2} />
+                      <span className="truncate">Web / URL</span>
                     </button>
                   </div>
 
                   {/* Tab 1: Local Folder */}
                   {landingTab === 'local' && (
-                    <div className="space-y-4">
+                    <div className="space-y-3.5">
                       <div className="space-y-1.5">
-                        <label className="text-xs font-semibold text-zinc-700 dark:text-zinc-300">
-                          Local Directory Absolute Path
+                        <label className="text-xs font-medium text-zinc-700 dark:text-zinc-300 flex items-center justify-between">
+                          <span>Local Directory Absolute Path</span>
+                          <span className="text-[10px] text-zinc-400 dark:text-zinc-500 font-mono">POSIX / Windows</span>
                         </label>
                         <input
                           type="text"
                           placeholder="e.g. C:\Users\aditya\projects\my-repo or /home/user/project"
                           value={localDirInput}
                           onChange={(e) => setLocalDirInput(e.target.value)}
-                          className="w-full bg-zinc-50 dark:bg-[#0A0A0A] border border-zinc-200 dark:border-white/[0.08] focus:border-zinc-400 dark:focus:border-zinc-500 rounded-xl px-4 py-2.5 text-xs text-zinc-900 dark:text-white placeholder:text-zinc-400 dark:placeholder:text-zinc-500 outline-none transition-all font-mono"
+                          className="w-full bg-zinc-50 dark:bg-[#0A0A0A] border border-zinc-200 dark:border-white/[0.08] focus:border-zinc-400 dark:focus:border-zinc-500 rounded-xl px-3.5 py-2.5 text-xs text-zinc-900 dark:text-white placeholder:text-zinc-400 dark:placeholder:text-zinc-500 outline-none transition-all font-mono"
                           disabled={isImporting}
                         />
                       </div>
                       <button
+                        type="button"
                         onClick={() => handleScanLocal()}
                         disabled={!localDirInput.trim() || isImporting}
-                        className="w-full py-3 rounded-xl bg-zinc-900 hover:bg-zinc-800 text-white dark:bg-white dark:hover:bg-zinc-200 dark:text-zinc-950 font-semibold text-xs transition-all flex items-center justify-center space-x-2 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed shadow-xs hover:scale-[1.01]"
+                        className="w-full py-2.5 rounded-xl bg-white hover:bg-zinc-100 text-zinc-950 font-semibold text-xs border border-zinc-200/90 dark:border-white/10 shadow-sm transition-colors flex items-center justify-center space-x-2 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-white outline-none focus:outline-none focus:ring-0 select-none"
                       >
                         {isImporting ? (
                           <>
@@ -256,7 +278,7 @@ export function App() {
                           </>
                         ) : (
                           <>
-                            <FolderSearch className="w-4 h-4" />
+                            <FolderOpen className="w-4 h-4" strokeWidth={2} />
                             <span>Scan & Reverse Engineer</span>
                           </>
                         )}
@@ -266,55 +288,86 @@ export function App() {
 
                   {/* Tab 2: Upload ZIP */}
                   {landingTab === 'upload' && (
-                    <div className="space-y-4">
-                      <label className="border-2 border-dashed border-zinc-300 dark:border-zinc-700 hover:border-zinc-400 dark:hover:border-zinc-500 rounded-2xl p-8 flex flex-col items-center justify-center cursor-pointer transition-all bg-zinc-50 dark:bg-[#0A0A0A] group">
-                        <input
-                          type="file"
-                          accept=".zip"
-                          className="hidden"
-                          onChange={(e) => {
-                            const f = e.target.files?.[0];
-                            if (f) handleUploadZip(f);
-                          }}
-                          disabled={isImporting}
-                        />
-                        <Zap className="w-8 h-8 text-zinc-400 dark:text-zinc-500 group-hover:text-zinc-800 dark:group-hover:text-zinc-200 transition-colors mb-2" />
-                        <span className="text-xs font-semibold text-zinc-800 dark:text-zinc-200">
-                          Click or Drag & Drop .ZIP repository archive
-                        </span>
-                        <span className="text-[11px] text-zinc-500 dark:text-zinc-400 mt-1">
-                          Supports TypeScript, JavaScript, Python, Go, Java, Rust
-                        </span>
-                      </label>
-                      {isImporting && (
-                        <div className="text-center text-xs text-zinc-600 dark:text-zinc-300 font-semibold flex items-center justify-center space-x-2">
-                          <span className="w-3.5 h-3.5 border-2 border-current border-t-transparent rounded-full animate-spin"></span>
-                          <span>Extracting & Parsing AST Symbols...</span>
+                    <div className="space-y-3.5">
+                      <div className="space-y-1.5">
+                        <label className="text-xs font-medium text-zinc-700 dark:text-zinc-300 flex items-center justify-between">
+                          <span>Project Archive File</span>
+                          <span className="text-[10px] text-zinc-400 dark:text-zinc-500 font-mono">.ZIP Archive</span>
+                        </label>
+                        <div className="relative">
+                          <input
+                            type="file"
+                            id="landing-zip-upload-field"
+                            accept=".zip"
+                            className="hidden"
+                            onChange={(e) => {
+                              const f = e.target.files?.[0];
+                              if (f) setSelectedZipFile(f);
+                            }}
+                            disabled={isImporting}
+                          />
+                          <label
+                            htmlFor="landing-zip-upload-field"
+                            onDragOver={(e) => e.preventDefault()}
+                            onDrop={(e) => {
+                              e.preventDefault();
+                              const f = e.dataTransfer.files?.[0];
+                              if (f) setSelectedZipFile(f);
+                            }}
+                            className="w-full bg-zinc-50 dark:bg-[#0A0A0A] border border-zinc-200 dark:border-white/[0.08] hover:border-zinc-300 dark:hover:border-white/[0.15] rounded-xl px-3.5 py-2.5 text-xs text-zinc-900 dark:text-white placeholder:text-zinc-400 flex items-center justify-between cursor-pointer transition-all font-mono select-none"
+                          >
+                            <span className={`truncate text-xs ${selectedZipFile ? 'text-zinc-900 dark:text-white font-medium' : 'text-zinc-400 dark:text-zinc-500'}`}>
+                              {selectedZipFile ? selectedZipFile.name : 'Choose or drop codebase .zip archive...'}
+                            </span>
+                            <span className="px-2 py-0.5 rounded-md bg-zinc-200/80 dark:bg-zinc-800 text-[10px] text-zinc-700 dark:text-zinc-300 font-sans font-medium shrink-0 ml-2">
+                              Browse
+                            </span>
+                          </label>
                         </div>
-                      )}
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => selectedZipFile && handleUploadZip(selectedZipFile)}
+                        disabled={!selectedZipFile || isImporting}
+                        className="w-full py-2.5 rounded-xl bg-white hover:bg-zinc-100 text-zinc-950 font-semibold text-xs border border-zinc-200/90 dark:border-white/10 shadow-sm transition-colors flex items-center justify-center space-x-2 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-white outline-none focus:outline-none focus:ring-0 select-none"
+                      >
+                        {isImporting ? (
+                          <>
+                            <span className="w-3.5 h-3.5 border-2 border-current border-t-transparent rounded-full animate-spin"></span>
+                            <span>Extracting & Parsing AST Symbols...</span>
+                          </>
+                        ) : (
+                          <>
+                            <Upload className="w-4 h-4" strokeWidth={2} />
+                            <span>Upload & Reverse Engineer ZIP</span>
+                          </>
+                        )}
+                      </button>
                     </div>
                   )}
 
                   {/* Tab 3: URL */}
                   {landingTab === 'url' && (
-                    <div className="space-y-4">
+                    <div className="space-y-3.5">
                       <div className="space-y-1.5">
-                        <label className="text-xs font-semibold text-zinc-700 dark:text-zinc-300">
-                          Website or Repository URL
+                        <label className="text-xs font-medium text-zinc-700 dark:text-zinc-300 flex items-center justify-between">
+                          <span>Website or Repository URL</span>
+                          <span className="text-[10px] text-zinc-400 dark:text-zinc-500 font-mono">HTTPS</span>
                         </label>
                         <input
                           type="text"
-                          placeholder="e.g. https://example.com"
+                          placeholder="e.g. https://github.com/org/repo or https://example.com"
                           value={websiteUrlInput}
                           onChange={(e) => setWebsiteUrlInput(e.target.value)}
-                          className="w-full bg-zinc-50 dark:bg-[#0A0A0A] border border-zinc-200 dark:border-white/[0.08] focus:border-zinc-400 dark:focus:border-zinc-500 rounded-xl px-4 py-2.5 text-xs text-zinc-900 dark:text-white placeholder:text-zinc-400 dark:placeholder:text-zinc-500 outline-none transition-all font-mono"
+                          className="w-full bg-zinc-50 dark:bg-[#0A0A0A] border border-zinc-200 dark:border-white/[0.08] focus:border-zinc-400 dark:focus:border-zinc-500 rounded-xl px-3.5 py-2.5 text-xs text-zinc-900 dark:text-white placeholder:text-zinc-400 dark:placeholder:text-zinc-500 outline-none transition-all font-mono"
                           disabled={isImporting}
                         />
                       </div>
                       <button
+                        type="button"
                         onClick={handleScrapeUrl}
                         disabled={!websiteUrlInput.trim() || isImporting}
-                        className="w-full py-3 rounded-xl bg-zinc-900 hover:bg-zinc-800 text-white dark:bg-white dark:hover:bg-zinc-200 dark:text-zinc-950 font-semibold text-xs transition-all flex items-center justify-center space-x-2 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed shadow-xs hover:scale-[1.01]"
+                        className="w-full py-2.5 rounded-xl bg-white hover:bg-zinc-100 text-zinc-950 font-semibold text-xs border border-zinc-200/90 dark:border-white/10 shadow-sm transition-colors flex items-center justify-center space-x-2 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-white outline-none focus:outline-none focus:ring-0 select-none"
                       >
                         {isImporting ? (
                           <>
@@ -323,7 +376,7 @@ export function App() {
                           </>
                         ) : (
                           <>
-                            <ShieldCheck className="w-4 h-4" />
+                            <Globe className="w-4 h-4" strokeWidth={2} />
                             <span>Reverse Engineer URL</span>
                           </>
                         )}
@@ -341,30 +394,34 @@ export function App() {
 
                 {/* Recently Imported Projects Quick Load */}
                 {recentProjects.length > 0 && (
-                  <div className="space-y-3">
-                    <h3 className="text-xs font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
-                      Recently Scanned Repositories
-                    </h3>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                      {recentProjects.map((p) => (
+                  <div className="space-y-2.5 pt-1">
+                    <div className="flex items-center justify-between px-0.5">
+                      <h3 className="text-[11px] font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
+                        Recently Scanned Repositories
+                      </h3>
+                      <span className="text-[10px] font-mono text-zinc-400 dark:text-zinc-500">
+                        {recentProjects.length} found
+                      </span>
+                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                      {recentProjects.slice(0, 4).map((p) => (
                         <div
                           key={p.id}
                           onClick={() => handleSelectRecentProject(p.id)}
-                          className="p-3.5 rounded-2xl bg-white dark:bg-[#141518] hover:bg-zinc-50 dark:hover:bg-[#18191E] border border-zinc-200 dark:border-white/[0.08] hover:border-zinc-300 dark:hover:border-white/[0.15] transition-all cursor-pointer flex items-center justify-between group shadow-2xs hover:scale-[1.01]"
+                          className="p-3 rounded-xl bg-white/80 dark:bg-[#121316]/90 hover:bg-zinc-50 dark:hover:bg-[#16171b] border border-zinc-200/80 dark:border-white/[0.08] hover:border-zinc-300 dark:hover:border-white/[0.16] transition-all cursor-pointer flex items-center justify-between group shadow-2xs"
                         >
-                          <div className="space-y-1 truncate pr-3">
-                            <h4 className="text-xs font-bold text-zinc-900 dark:text-white group-hover:text-sky-600 dark:group-hover:text-sky-400 transition-colors truncate">
+                          <div className="space-y-0.5 truncate pr-2.5">
+                            <h4 className="text-xs font-semibold text-zinc-900 dark:text-white group-hover:text-sky-600 dark:group-hover:text-sky-400 transition-colors truncate">
                               {p.name}
                             </h4>
                             <div className="flex items-center space-x-2 text-[10px] text-zinc-500 dark:text-zinc-400 font-mono">
-                              <span className="px-1.5 py-0.2 rounded bg-zinc-100 dark:bg-zinc-800 border border-zinc-200 dark:border-white/[0.08] text-zinc-700 dark:text-zinc-300">
-                                {p.primary_language}
+                              <span className="px-1.5 py-0.2 rounded bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300">
+                                {p.primary_language || 'Project'}
                               </span>
                               <span>{p.total_files} files</span>
                             </div>
                           </div>
-                          <button className="px-2.5 py-1.5 rounded-lg bg-zinc-100 dark:bg-zinc-800 group-hover:bg-zinc-900 dark:group-hover:bg-white text-zinc-700 dark:text-zinc-300 group-hover:text-white dark:group-hover:text-zinc-950 text-[11px] font-semibold transition-all border border-zinc-200 dark:border-white/[0.08] shrink-0 flex items-center gap-1">
-                            <span>Open</span>
+                          <button className="p-1.5 rounded-lg bg-zinc-100 dark:bg-zinc-800/80 group-hover:bg-zinc-900 dark:group-hover:bg-white text-zinc-700 dark:text-zinc-300 group-hover:text-white dark:group-hover:text-zinc-950 transition-all shrink-0">
                             <ArrowRight className="w-3 h-3" />
                           </button>
                         </div>
@@ -374,14 +431,14 @@ export function App() {
                 )}
 
                 {/* Footer Brand */}
-                <div className="pt-2 text-center">
-                  <p className="text-xs text-zinc-500 dark:text-zinc-400 font-normal">
+                <div className="pt-1 text-center">
+                  <p className="text-[11px] text-zinc-500 dark:text-zinc-300 font-normal">
                     Made by{' '}
                     <a
                       href="https://team.axiogen.in"
                       target="_blank"
                       rel="noreferrer"
-                      className="text-zinc-700 dark:text-zinc-300 hover:text-zinc-900 dark:hover:text-white transition-colors font-semibold underline underline-offset-2"
+                      className="text-zinc-800 dark:text-zinc-100 hover:text-sky-500 dark:hover:text-sky-400 transition-colors font-medium underline underline-offset-2 decoration-zinc-400 dark:decoration-zinc-500"
                     >
                       team.axiogen.in
                     </a>

@@ -229,7 +229,7 @@ export const AIChatConsole: React.FC<AIChatConsoleProps> = ({ projectId, selecte
             key={idx}
             onClick={() => handleSend(prompt)}
             disabled={loading}
-            className="px-3.5 py-1.5 rounded-xl bg-white dark:bg-zinc-900/80 border border-zinc-200 dark:border-zinc-800 hover:border-zinc-300 dark:hover:border-zinc-700 text-xs text-zinc-700 dark:text-zinc-300 hover:text-zinc-900 dark:hover:text-white hover:bg-zinc-100 dark:hover:bg-zinc-800/80 transition-all text-left flex items-center space-x-2 cursor-pointer disabled:opacity-50 shadow-2xs hover:scale-[1.01]"
+            className="px-3.5 py-1.5 rounded-xl bg-white dark:bg-zinc-900/80 border border-zinc-200 dark:border-zinc-800 hover:border-zinc-300 dark:hover:border-zinc-700 text-xs text-zinc-700 dark:text-zinc-300 hover:text-zinc-900 dark:hover:text-white hover:bg-zinc-100 dark:hover:bg-zinc-800/80 transition-colors text-left flex items-center space-x-2 cursor-pointer disabled:opacity-50 shadow-2xs outline-none focus:outline-none focus:ring-0 select-none"
           >
             <Terminal className="w-3 h-3 text-zinc-400" />
             <span>{prompt}</span>

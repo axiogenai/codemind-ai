@@ -146,7 +146,7 @@ export const ChangeImpactView: React.FC<ChangeImpactViewProps> = ({ initialTarge
           <button
             onClick={() => handleRunAnalysis(customTarget || selectedTarget)}
             disabled={loading || (!customTarget && !selectedTarget)}
-            className="flex items-center gap-2 px-4 h-10 rounded-xl bg-zinc-900 hover:bg-zinc-800 text-white dark:bg-white dark:hover:bg-zinc-200 dark:text-zinc-950 font-semibold text-xs border border-transparent transition-all disabled:opacity-40 cursor-pointer shrink-0 shadow-xs hover:scale-[1.01]"
+            className="flex items-center gap-2 px-4 h-10 rounded-xl bg-zinc-900 hover:bg-zinc-800 text-white dark:bg-white dark:hover:bg-zinc-200 dark:text-zinc-950 font-semibold text-xs border border-transparent transition-colors disabled:opacity-40 cursor-pointer shrink-0 shadow-xs outline-none focus:outline-none focus:ring-0 select-none"
           >
             <Play className="w-3.5 h-3.5 fill-current" />
             <span>{loading ? 'Predicting...' : 'Predict Impact'}</span>

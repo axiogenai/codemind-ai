@@ -48,7 +48,7 @@ export const BentoCard: React.FC<BentoCardProps> = ({
       onMouseMove={handleMouseMove}
       onMouseEnter={() => setOpacity(1)}
       onMouseLeave={() => setOpacity(0)}
-      className={`group relative overflow-hidden rounded-2xl sm:rounded-3xl border border-zinc-200 dark:border-white/[0.08] bg-white dark:bg-[#0D0E11] p-5 sm:p-6 shadow-xs hover:border-zinc-300 dark:hover:border-white/[0.16] transition-all duration-200 hover:scale-[1.008] ${colSpan} ${rowSpan} ${className}`}
+      className={`group relative overflow-hidden rounded-2xl sm:rounded-3xl border border-zinc-200 dark:border-white/[0.08] bg-white dark:bg-[#0D0E11] p-4.5 sm:p-5 shadow-xs hover:border-zinc-300 dark:hover:border-white/[0.16] transition-colors duration-200 ${colSpan} ${rowSpan} ${className}`}
     >
       {/* Ambient Spotlight Layer (Aceternity UI archetype) */}
       <div

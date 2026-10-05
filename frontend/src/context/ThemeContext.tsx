@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useLayoutEffect } from 'react';
 
 type Theme = 'dark' | 'light';
 
@@ -16,26 +16,45 @@ const ThemeContext = createContext<ThemeContextType>({
   isDarkMode: true,
 });
 
+const applyThemeToDOM = (t: Theme) => {
+  const root = document.documentElement;
+  if (t === 'dark') {
+    root.classList.add('dark');
+    root.style.backgroundColor = '#0A0A0A';
+    root.style.colorScheme = 'dark';
+  } else {
+    root.classList.remove('dark');
+    root.style.backgroundColor = '#FAFAFA';
+    root.style.colorScheme = 'light';
+  }
+  try {
+    localStorage.setItem('codemind_theme', t);
+  } catch {
+    // Ignore localStorage quota errors
+  }
+};
+
 export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [theme, setTheme] = useState<Theme>(() => {
-    const saved = localStorage.getItem('codemind_theme') as Theme | null;
-    if (saved === 'dark' || saved === 'light') return saved;
-    // Default to dark mode for elite developer tool aesthetic
+    try {
+      const saved = localStorage.getItem('codemind_theme') as Theme | null;
+      if (saved === 'dark' || saved === 'light') return saved;
+    } catch {
+      // Ignore storage read errors
+    }
     return 'dark';
   });
 
-  useEffect(() => {
-    const root = document.documentElement;
-    if (theme === 'dark') {
-      root.classList.add('dark');
-    } else {
-      root.classList.remove('dark');
-    }
-    localStorage.setItem('codemind_theme', theme);
+  useLayoutEffect(() => {
+    applyThemeToDOM(theme);
   }, [theme]);
 
   const toggleTheme = () => {
-    setTheme(prev => (prev === 'dark' ? 'light' : 'dark'));
+    setTheme(prev => {
+      const nextTheme = prev === 'dark' ? 'light' : 'dark';
+      applyThemeToDOM(nextTheme);
+      return nextTheme;
+    });
   };
 
   const isDark = theme === 'dark';

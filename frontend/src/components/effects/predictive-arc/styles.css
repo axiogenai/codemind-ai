@@ -1,0 +1,15 @@
+.shader-frame,
+.predictive-arc-container {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+  width: 100%;
+  height: 100%;
+}
+
+.predictive-arc-canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+}

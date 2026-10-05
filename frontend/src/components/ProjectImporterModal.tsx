@@ -168,7 +168,7 @@ export const ProjectImporterModal: React.FC<ProjectImporterModalProps> = ({
             <button
               onClick={handleScanLocal}
               disabled={importing || !localPath.trim()}
-              className="w-full py-3 rounded-xl bg-zinc-900 hover:bg-zinc-800 text-white dark:bg-white dark:hover:bg-zinc-200 dark:text-zinc-950 font-semibold text-xs transition-all disabled:opacity-40 flex items-center justify-center space-x-2 cursor-pointer shadow-xs hover:scale-[1.01]"
+              className="w-full py-3 rounded-xl bg-zinc-900 hover:bg-zinc-800 text-white dark:bg-white dark:hover:bg-zinc-200 dark:text-zinc-950 font-semibold text-xs transition-colors disabled:opacity-40 flex items-center justify-center space-x-2 cursor-pointer shadow-xs outline-none focus:outline-none focus:ring-0 select-none"
             >
               {importing ? (
                 <>
@@ -209,7 +209,7 @@ export const ProjectImporterModal: React.FC<ProjectImporterModalProps> = ({
                 </div>
               ) : (
                 <>
-                  <Upload className="w-8 h-8 text-zinc-500 dark:text-zinc-400 mb-2 transition-transform group-hover:scale-105" />
+                  <Upload className="w-8 h-8 text-zinc-500 dark:text-zinc-400 mb-2" />
                   <h4 className="text-xs font-bold text-zinc-900 dark:text-white mb-1">
                     {zipFile ? zipFile.name : 'Click or Drag & Drop Project ZIP File'}
                   </h4>
@@ -223,7 +223,7 @@ export const ProjectImporterModal: React.FC<ProjectImporterModalProps> = ({
             <button
               onClick={handleUploadZip}
               disabled={importing || !zipFile}
-              className="w-full py-3 rounded-xl bg-zinc-900 hover:bg-zinc-800 text-white dark:bg-white dark:hover:bg-zinc-200 dark:text-zinc-950 font-semibold text-xs transition-all disabled:opacity-40 flex items-center justify-center space-x-2 cursor-pointer shadow-xs hover:scale-[1.01]"
+              className="w-full py-3 rounded-xl bg-zinc-900 hover:bg-zinc-800 text-white dark:bg-white dark:hover:bg-zinc-200 dark:text-zinc-950 font-semibold text-xs transition-colors disabled:opacity-40 flex items-center justify-center space-x-2 cursor-pointer shadow-xs outline-none focus:outline-none focus:ring-0 select-none"
             >
               {importing ? (
                 <>
@@ -263,7 +263,7 @@ export const ProjectImporterModal: React.FC<ProjectImporterModalProps> = ({
             <button
               onClick={handleScrapeUrl}
               disabled={importing || !websiteUrl.trim()}
-              className="w-full py-3 rounded-xl bg-zinc-900 hover:bg-zinc-800 text-white dark:bg-white dark:hover:bg-zinc-200 dark:text-zinc-950 font-semibold text-xs transition-all disabled:opacity-40 flex items-center justify-center space-x-2 cursor-pointer shadow-xs hover:scale-[1.01]"
+              className="w-full py-3 rounded-xl bg-zinc-900 hover:bg-zinc-800 text-white dark:bg-white dark:hover:bg-zinc-200 dark:text-zinc-950 font-semibold text-xs transition-colors disabled:opacity-40 flex items-center justify-center space-x-2 cursor-pointer shadow-xs outline-none focus:outline-none focus:ring-0 select-none"
             >
               {importing ? (
                 <>
