@@ -13,6 +13,7 @@ Extracts ZIP archives, scans local folders, clones Git repos, filters binaries/v
 import os
 import zipfile
 import tempfile
+import datetime
 from typing import Dict, List, Any, Tuple
 
 IGNORE_DIRS = {
@@ -47,10 +48,17 @@ class ProjectImporterEngine:
                         content = file_handle.read()
                         
                     lines = content.splitlines()
+                    try:
+                        ctime = os.path.getctime(full_path)
+                        created_iso = datetime.datetime.fromtimestamp(ctime).isoformat()
+                    except Exception:
+                        created_iso = datetime.datetime.now().isoformat()
+
                     code_files.append({
                         "path": rel_path,
                         "lines": len(lines),
-                        "code": content
+                        "code": content,
+                        "created_at": created_iso
                     })
                 except Exception:
                     continue

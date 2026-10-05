@@ -909,14 +909,14 @@ export const KnowledgeGraphViewer: React.FC<KnowledgeGraphViewerProps> = ({
   }, [selectedNode, data]);
 
   return (
-    <div className="h-[calc(100vh-4rem)] flex flex-col p-6 space-y-4">
+    <div className="h-[calc(100vh-4rem)] flex flex-col p-3 sm:p-5 md:p-6 space-y-3 sm:space-y-4">
       {/* Controls Toolbar: Studio-Grade Precision Command Deck */}
-      <div className="bg-[#0D0E11] border border-white/[0.08] rounded-xl p-3 shadow-xl flex flex-col gap-2.5">
+      <div className="bg-[#0D0E11] border border-white/[0.08] rounded-xl p-2.5 sm:p-3 shadow-xl flex flex-col gap-2.5">
         {/* Tier 1: Primary Controls & Engine Telemetry */}
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <div className="flex flex-wrap items-center gap-2.5">
+        <div className="flex flex-wrap items-center justify-between gap-2.5 sm:gap-3">
+          <div className="flex flex-wrap items-center gap-2 sm:gap-2.5 w-full sm:w-auto">
             {/* Precision Search Input */}
-            <div className="relative flex items-center bg-[#151619] border border-white/[0.08] focus-within:border-zinc-500 focus-within:ring-1 focus-within:ring-zinc-600/40 rounded-lg px-2.5 h-8.5 w-60 transition-all">
+            <div className="relative flex items-center bg-[#151619] border border-white/[0.08] focus-within:border-zinc-500 focus-within:ring-1 focus-within:ring-zinc-600/40 rounded-lg px-2.5 h-8.5 w-full sm:w-60 transition-all">
               <Search className="w-3.5 h-3.5 text-zinc-400 shrink-0" />
               <input
                 type="text"
@@ -1043,9 +1043,9 @@ export const KnowledgeGraphViewer: React.FC<KnowledgeGraphViewerProps> = ({
         </div>
 
         {/* Tier 2: Entity Filter Bar */}
-        <div className="flex flex-wrap items-center justify-between gap-3 pt-2.5 border-t border-white/[0.05]">
-          <div className="flex flex-wrap items-center gap-1.5">
-            <div className="flex items-center gap-1.5 text-xs text-zinc-400 font-medium mr-1.5 select-none">
+        <div className="flex flex-wrap items-center justify-between gap-2.5 pt-2.5 border-t border-white/[0.05]">
+          <div className="flex items-center gap-1.5 overflow-x-auto max-w-full custom-scrollbar pb-0.5">
+            <div className="flex items-center gap-1.5 text-xs text-zinc-400 font-medium mr-1 select-none shrink-0">
               <SlidersHorizontal className="w-3.5 h-3.5 text-zinc-400" />
               <span>Filter:</span>
             </div>
@@ -1210,7 +1210,7 @@ export const KnowledgeGraphViewer: React.FC<KnowledgeGraphViewerProps> = ({
 
         {/* Selected Node Details Drawer */}
         {selectedNode && (
-          <div className="absolute top-4 right-4 w-84 glass-panel-glow p-5 rounded-2xl space-y-4 animate-in fade-in slide-in-from-right duration-200 shadow-2xl border border-cyan-500/40 z-20">
+          <div className="absolute top-3 right-3 left-3 sm:left-auto sm:right-4 sm:top-4 sm:w-84 glass-panel-glow p-4 sm:p-5 rounded-2xl space-y-3 sm:space-y-4 animate-in fade-in slide-in-from-right duration-200 shadow-2xl border border-cyan-500/40 z-20 max-h-[80vh] overflow-y-auto custom-scrollbar">
             <div className="flex items-center justify-between border-b border-gray-800 pb-3">
               <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider badge-${selectedNode.type.toLowerCase()}`}>
                 {selectedNode.type}

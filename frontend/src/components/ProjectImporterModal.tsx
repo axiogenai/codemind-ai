@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import { Upload, FolderSearch, ArrowRight, AlertCircle, Loader2, Globe, X } from 'lucide-react';
 import type { ProjectMeta, ProjectFile, KnowledgeGraphData, SecurityReport } from '../types';
 import { scanLocalDirectory, uploadProjectZip, scrapeWebsiteUrl } from '../services/api';
+import { LoadingLines } from './LoadingLines';
+import { MeshDriftShaderBackground } from './MeshDriftShaderBackground';
 
 interface ProjectImporterModalProps {
   isOpen: boolean;
@@ -28,12 +30,25 @@ export const ProjectImporterModal: React.FC<ProjectImporterModalProps> = ({
 
   if (!isOpen) return null;
 
+  if (importing) {
+    return (
+      <div className="fixed inset-0 z-[9999] w-screen h-screen bg-zinc-50 dark:bg-[#0A0A0A] flex flex-col items-center justify-center select-none overflow-hidden transition-colors">
+        <LoadingLines />
+      </div>
+    );
+  }
+
   const handleScanLocal = async () => {
     if (!localPath.trim() || importing) return;
     setImporting(true);
     setErrorMessage('');
+    const startTime = Date.now();
     try {
       const result = await scanLocalDirectory(localPath.trim());
+      const elapsed = Date.now() - startTime;
+      if (elapsed < 4000) {
+        await new Promise((r) => setTimeout(r, 4000 - elapsed));
+      }
       onImportSuccess(result);
       onClose();
     } catch (err: any) {
@@ -47,8 +62,13 @@ export const ProjectImporterModal: React.FC<ProjectImporterModalProps> = ({
     if (!zipFile || importing) return;
     setImporting(true);
     setErrorMessage('');
+    const startTime = Date.now();
     try {
       const result = await uploadProjectZip(zipFile);
+      const elapsed = Date.now() - startTime;
+      if (elapsed < 4000) {
+        await new Promise((r) => setTimeout(r, 4000 - elapsed));
+      }
       onImportSuccess(result);
       onClose();
     } catch (err: any) {
@@ -62,8 +82,13 @@ export const ProjectImporterModal: React.FC<ProjectImporterModalProps> = ({
     if (!websiteUrl.trim() || importing) return;
     setImporting(true);
     setErrorMessage('');
+    const startTime = Date.now();
     try {
       const result = await scrapeWebsiteUrl(websiteUrl.trim());
+      const elapsed = Date.now() - startTime;
+      if (elapsed < 4000) {
+        await new Promise((r) => setTimeout(r, 4000 - elapsed));
+      }
       onImportSuccess(result);
       onClose();
     } catch (err: any) {
@@ -74,8 +99,19 @@ export const ProjectImporterModal: React.FC<ProjectImporterModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/50 dark:bg-black/80 backdrop-blur-xs flex items-center justify-center p-4 transition-opacity">
-      <div className="bg-white dark:bg-[#141518] border border-zinc-200 dark:border-white/[0.08] rounded-3xl max-w-xl w-full p-6 space-y-6 shadow-2xl transition-colors duration-200">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 overflow-hidden bg-black">
+      {/* Animated WebGL Shader Background covering previous project */}
+      <MeshDriftShaderBackground className="z-0" />
+      {/* Backdrop contrast overlay */}
+      <div 
+        className="absolute inset-0 bg-black/60 backdrop-blur-xs z-[1]" 
+        onClick={() => { if (!importing) onClose(); }} 
+      />
+
+      <div 
+        onClick={(e) => e.stopPropagation()}
+        className="relative z-10 bg-white dark:bg-[#141518] border border-zinc-200 dark:border-white/[0.08] rounded-2xl sm:rounded-3xl max-w-xl w-full p-4 sm:p-6 space-y-4 sm:space-y-6 shadow-2xl max-h-[92vh] overflow-y-auto custom-scrollbar transition-colors duration-200"
+      >
         {/* Top Header */}
         <div className="flex items-center justify-between border-b border-zinc-200 dark:border-white/[0.08] pb-4">
           <div>

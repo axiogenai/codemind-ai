@@ -4,22 +4,20 @@ import {
   ShieldCheck,
   Zap,
   GitPullRequest,
-  ArrowUpRight,
   Code2,
   Clock,
   Network,
   ChevronDown,
   Search,
-  TrendingUp,
-  CheckCircle2,
-  AlertTriangle,
-  Layers
+  Layers,
+  Activity
 } from 'lucide-react';
 import type { ProjectMeta, ProjectFile, SecurityReport } from '../types';
 import type { ActiveTab } from './Sidebar';
 import type { RingData } from './charts/ring-context';
 import { BentoGrid, BentoCard } from './ui/BentoGrid';
 import { PredictiveArcCanvas } from './effects/predictive-arc/PredictiveArcCanvas';
+import ContributionHeatmap from './charts/ContributionHeatmap';
 
 const LANGUAGE_COLORS: Record<string, string> = {
   Python: '#0D9488',
@@ -76,8 +74,17 @@ export const OverviewDashboard: React.FC<OverviewDashboardProps> = ({
         setIsImpactDropdownOpen(false);
       }
     };
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setIsImpactDropdownOpen(false);
+      }
+    };
     document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
+    document.addEventListener('keydown', handleKeyDown);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('keydown', handleKeyDown);
+    };
   }, []);
 
   const rawLanguages = project.languages && Object.keys(project.languages).length > 0
@@ -157,22 +164,22 @@ export const OverviewDashboard: React.FC<OverviewDashboardProps> = ({
         </BentoCard>
 
         {/* Bento 2: Total Source Files */}
-        <BentoCard colSpan="md:col-span-1 lg:col-span-1" className="space-y-2.5 !p-4">
+        <BentoCard colSpan="md:col-span-1 lg:col-span-1" className="space-y-1.5 !p-3 sm:!p-3.5">
           <div className="flex items-center justify-between gap-2 min-w-0">
-            <span className="text-xs font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider font-mono truncate">
+            <span className="text-[11px] font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider font-mono truncate">
               Source Files
             </span>
-            <div className="p-2 rounded-xl bg-sky-50 dark:bg-sky-950/40 border border-sky-200 dark:border-sky-800/40 text-sky-600 dark:text-sky-400 shrink-0">
-              <FileCode className="w-4 h-4" />
+            <div className="p-1.5 rounded-lg bg-sky-50 dark:bg-sky-950/40 border border-sky-200 dark:border-sky-800/40 text-sky-600 dark:text-sky-400 shrink-0">
+              <FileCode className="w-3.5 h-3.5" />
             </div>
           </div>
-          <div className="space-y-1 min-w-0">
-            <p className="text-2xl sm:text-3xl font-extrabold text-zinc-900 dark:text-white tracking-tight font-mono">
+          <div className="space-y-0.5 min-w-0">
+            <p className="text-xl sm:text-2xl font-extrabold text-zinc-900 dark:text-white tracking-tight font-mono">
               {totalFiles.toLocaleString()}
             </p>
-            <div className="flex items-center justify-between gap-2 pt-1 text-[11px] text-zinc-500 dark:text-zinc-400 font-normal min-w-0">
+            <div className="flex items-center justify-between gap-1.5 pt-0.5 text-[10px] text-zinc-500 dark:text-zinc-400 font-normal min-w-0">
               <span className="truncate">Fully Indexed ASTs</span>
-              <span className="font-mono text-[10px] font-semibold text-teal-700 dark:text-teal-400 bg-teal-50 dark:bg-teal-950/40 px-1.5 py-0.5 rounded border border-teal-200 dark:border-teal-800/50 shrink-0 whitespace-nowrap">
+              <span className="font-mono text-[9px] font-semibold text-teal-700 dark:text-teal-400 bg-teal-50 dark:bg-teal-950/40 px-1.5 py-0.2 rounded border border-teal-200 dark:border-teal-800/50 shrink-0 whitespace-nowrap">
                 100% Bound
               </span>
             </div>
@@ -180,22 +187,22 @@ export const OverviewDashboard: React.FC<OverviewDashboardProps> = ({
         </BentoCard>
 
         {/* Bento 3: Lines of Code (LOC) */}
-        <BentoCard colSpan="md:col-span-1 lg:col-span-1" className="space-y-2.5 !p-4">
+        <BentoCard colSpan="md:col-span-1 lg:col-span-1" className="space-y-1.5 !p-3 sm:!p-3.5">
           <div className="flex items-center justify-between gap-2 min-w-0">
-            <span className="text-xs font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider font-mono truncate">
+            <span className="text-[11px] font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider font-mono truncate">
               Lines of Code
             </span>
-            <div className="p-2 rounded-xl bg-slate-100 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/50 text-slate-700 dark:text-slate-300 shrink-0">
-              <Code2 className="w-4 h-4" />
+            <div className="p-1.5 rounded-lg bg-slate-100 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/50 text-slate-700 dark:text-slate-300 shrink-0">
+              <Code2 className="w-3.5 h-3.5" />
             </div>
           </div>
-          <div className="space-y-1 min-w-0">
-            <p className="text-2xl sm:text-3xl font-extrabold text-zinc-900 dark:text-white tracking-tight font-mono">
+          <div className="space-y-0.5 min-w-0">
+            <p className="text-xl sm:text-2xl font-extrabold text-zinc-900 dark:text-white tracking-tight font-mono">
               {totalLines.toLocaleString()}
             </p>
-            <div className="flex items-center justify-between gap-2 pt-1 text-[11px] text-zinc-500 dark:text-zinc-400 font-normal min-w-0">
+            <div className="flex items-center justify-between gap-1.5 pt-0.5 text-[10px] text-zinc-500 dark:text-zinc-400 font-normal min-w-0">
               <span className="truncate">Analyzed Codebase</span>
-              <span className="font-mono text-[10px] font-semibold text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-slate-800/40 px-1.5 py-0.5 rounded border border-slate-200 dark:border-slate-700/50 shrink-0 whitespace-nowrap">
+              <span className="font-mono text-[9px] font-semibold text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-slate-800/40 px-1.5 py-0.2 rounded border border-slate-200 dark:border-slate-700/50 shrink-0 whitespace-nowrap">
                 AST Tokens
               </span>
             </div>
@@ -203,25 +210,25 @@ export const OverviewDashboard: React.FC<OverviewDashboardProps> = ({
         </BentoCard>
 
         {/* Bento 4: Codebase Health Score */}
-        <BentoCard colSpan="md:col-span-1 lg:col-span-1" className="space-y-2.5 !p-4">
+        <BentoCard colSpan="md:col-span-1 lg:col-span-1" className="space-y-1.5 !p-3 sm:!p-3.5">
           <div className="flex items-center justify-between gap-2 min-w-0">
-            <span className="text-xs font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider font-mono truncate">
+            <span className="text-[11px] font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider font-mono truncate">
               Security Health
             </span>
-            <div className="p-2 rounded-xl bg-teal-50 dark:bg-teal-950/40 border border-teal-200 dark:border-teal-800/40 text-teal-600 dark:text-teal-400 shrink-0">
-              <ShieldCheck className="w-4 h-4" />
+            <div className="p-1.5 rounded-lg bg-teal-50 dark:bg-teal-950/40 border border-teal-200 dark:border-teal-800/40 text-teal-600 dark:text-teal-400 shrink-0">
+              <ShieldCheck className="w-3.5 h-3.5" />
             </div>
           </div>
-          <div className="space-y-1 min-w-0">
+          <div className="space-y-0.5 min-w-0">
             <div className="flex items-baseline gap-1">
-              <p className="text-2xl sm:text-3xl font-extrabold text-zinc-900 dark:text-white tracking-tight font-mono">
+              <p className="text-xl sm:text-2xl font-extrabold text-zinc-900 dark:text-white tracking-tight font-mono">
                 {security.health_score}
               </p>
-              <span className="text-xs text-zinc-400 font-mono">/ 100</span>
+              <span className="text-[11px] text-zinc-400 font-mono">/ 100</span>
             </div>
-            <div className="flex items-center justify-between gap-2 pt-1 text-[11px] text-zinc-500 dark:text-zinc-400 font-normal min-w-0">
+            <div className="flex items-center justify-between gap-1.5 pt-0.5 text-[10px] text-zinc-500 dark:text-zinc-400 font-normal min-w-0">
               <span className="truncate">Grade {security.security_grade} Compliance</span>
-              <span className="font-mono text-[10px] font-semibold text-teal-700 dark:text-teal-400 bg-teal-50 dark:bg-teal-950/40 px-1.5 py-0.5 rounded border border-teal-200 dark:border-teal-800/50 shrink-0 whitespace-nowrap">
+              <span className="font-mono text-[9px] font-semibold text-teal-700 dark:text-teal-400 bg-teal-50 dark:bg-teal-950/40 px-1.5 py-0.2 rounded border border-teal-200 dark:border-teal-800/50 shrink-0 whitespace-nowrap">
                 {security.health_score >= 80 ? 'Optimal' : 'Action Req'}
               </span>
             </div>
@@ -229,22 +236,22 @@ export const OverviewDashboard: React.FC<OverviewDashboardProps> = ({
         </BentoCard>
 
         {/* Bento 5: Technical Debt */}
-        <BentoCard colSpan="md:col-span-1 lg:col-span-1" className="space-y-2.5 !p-4">
+        <BentoCard colSpan="md:col-span-1 lg:col-span-1" className="space-y-1.5 !p-3 sm:!p-3.5">
           <div className="flex items-center justify-between gap-2 min-w-0">
-            <span className="text-xs font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider font-mono truncate">
+            <span className="text-[11px] font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider font-mono truncate">
               Technical Debt
             </span>
-            <div className="p-2 rounded-xl bg-zinc-100 dark:bg-white/[0.06] border border-zinc-200 dark:border-white/[0.08] text-zinc-800 dark:text-zinc-200 shrink-0">
-              <Clock className="w-4 h-4" />
+            <div className="p-1.5 rounded-lg bg-zinc-100 dark:bg-white/[0.06] border border-zinc-200 dark:border-white/[0.08] text-zinc-800 dark:text-zinc-200 shrink-0">
+              <Clock className="w-3.5 h-3.5" />
             </div>
           </div>
-          <div className="space-y-1 min-w-0">
-            <p className="text-2xl sm:text-3xl font-extrabold text-zinc-900 dark:text-white tracking-tight font-mono">
+          <div className="space-y-0.5 min-w-0">
+            <p className="text-xl sm:text-2xl font-extrabold text-zinc-900 dark:text-white tracking-tight font-mono">
               {security.technical_debt_hours}h
             </p>
-            <div className="flex items-center justify-between gap-2 pt-1 text-[11px] text-zinc-500 dark:text-zinc-400 font-normal min-w-0">
+            <div className="flex items-center justify-between gap-1.5 pt-0.5 text-[10px] text-zinc-500 dark:text-zinc-400 font-normal min-w-0">
               <span className="truncate">Remediation Effort</span>
-              <span className="font-mono text-[10px] font-semibold text-zinc-700 dark:text-zinc-300 bg-zinc-100 dark:bg-white/[0.06] px-1.5 py-0.5 rounded border border-zinc-200 dark:border-white/[0.08] shrink-0 whitespace-nowrap">
+              <span className="font-mono text-[9px] font-semibold text-zinc-700 dark:text-zinc-300 bg-zinc-100 dark:bg-white/[0.06] px-1.5 py-0.2 rounded border border-zinc-200 dark:border-white/[0.08] shrink-0 whitespace-nowrap">
                 Auto Solvable
               </span>
             </div>
@@ -272,11 +279,11 @@ export const OverviewDashboard: React.FC<OverviewDashboardProps> = ({
 
             {/* Custom SVG Donut — single ring, colored segments */}
             {(() => {
-              const size = 140;
+              const size = 125;
               const cx = size / 2;
               const cy = size / 2;
-              const R = 52;
-              const strokeW = 18;
+              const R = 46;
+              const strokeW = 16;
               const circumference = 2 * Math.PI * R;
               const topLangs = ringData.slice(0, 8);
               const total = topLangs.reduce((s, d) => s + d.value, 0) || 1;
@@ -371,73 +378,26 @@ export const OverviewDashboard: React.FC<OverviewDashboardProps> = ({
         </BentoCard>
 
 
-        {/* Bento 7: Security Audit Findings & Health Breakdown */}
-        <BentoCard colSpan="md:col-span-3 lg:col-span-2" className="space-y-3.5 !p-4 sm:!p-4.5">
+        {/* Bento 7: Bklit File Creation Heatmap */}
+        <BentoCard colSpan="md:col-span-3 lg:col-span-2" className="space-y-3 !p-4 sm:!p-4.5">
           <div className="flex items-start justify-between gap-3 min-w-0">
             <div className="min-w-0">
               <h3 className="text-sm font-bold text-zinc-900 dark:text-white uppercase tracking-wider flex items-center gap-2 font-mono">
-                <ShieldCheck className="w-4 h-4 text-teal-600 dark:text-teal-400 shrink-0" />
-                <span className="truncate">Security &amp; Code Smells</span>
+                <Activity className="w-4 h-4 text-sky-600 dark:text-sky-400 shrink-0" />
+                <span className="truncate">File Creation Heatmap</span>
               </h3>
-              <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">AST cyclomatic heuristics &amp; vulnerability scan</p>
+              <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">Genesis chronology &amp; repository activity matrix</p>
             </div>
-            <button
-              onClick={() => onNavigateTab('security')}
-              className="text-xs font-semibold text-zinc-700 dark:text-zinc-300 hover:text-zinc-900 dark:hover:text-white flex items-center gap-1 cursor-pointer transition-colors shrink-0 whitespace-nowrap"
-            >
-              <span>View Audit</span>
-              <ArrowUpRight className="w-3.5 h-3.5" />
-            </button>
+            <span className="text-xs font-mono font-semibold px-2 py-0.5 rounded-lg bg-zinc-100 dark:bg-zinc-800 border border-zinc-200 dark:border-white/[0.08] text-zinc-700 dark:text-zinc-300 shrink-0 whitespace-nowrap">
+              {files.length} Files Mapped
+            </span>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <div className="p-3.5 rounded-xl bg-zinc-50 dark:bg-[#121316] border border-zinc-200 dark:border-white/[0.08] space-y-1.5 min-w-0 overflow-hidden">
-              <div className="flex items-center justify-between gap-2">
-                <p className="text-xs font-semibold text-zinc-700 dark:text-zinc-300 truncate">
-                  Detected Vulnerabilities
-                </p>
-                {security.vulnerabilities.length > 0 ? (
-                  <AlertTriangle className="w-4 h-4 text-zinc-600 dark:text-zinc-400 shrink-0" />
-                ) : (
-                  <CheckCircle2 className="w-4 h-4 text-zinc-700 dark:text-zinc-300 shrink-0" />
-                )}
-              </div>
-              <p className="text-2xl font-bold text-zinc-900 dark:text-white tracking-tight font-mono">
-                {security.vulnerabilities.length}
-              </p>
-              <p className="text-[11px] text-zinc-500 dark:text-zinc-400 leading-relaxed line-clamp-2">
-                {security.vulnerabilities.length > 0
-                  ? 'Hardcoded secrets, injection vectors, or auth bypasses.'
-                  : 'Zero high-severity vulnerabilities discovered.'}
-              </p>
-            </div>
-
-            <div className="p-3.5 rounded-xl bg-zinc-50 dark:bg-[#121316] border border-zinc-200 dark:border-white/[0.08] space-y-1.5 min-w-0 overflow-hidden">
-              <div className="flex items-center justify-between gap-2">
-                <p className="text-xs font-semibold text-zinc-700 dark:text-zinc-300 truncate">
-                  Code Smells & Complexity
-                </p>
-                <TrendingUp className="w-4 h-4 text-zinc-600 dark:text-zinc-400 shrink-0" />
-              </div>
-              <p className="text-2xl font-bold text-zinc-900 dark:text-white tracking-tight font-mono">
-                {security.code_smells.length}
-              </p>
-              <p className="text-[11px] text-zinc-500 dark:text-zinc-400 leading-relaxed line-clamp-2">
-                {security.code_smells.length > 0
-                  ? 'High cyclomatic complexity and duplicate symbol logic.'
-                  : 'Clean modular architecture with minimal debt.'}
-              </p>
-            </div>
-          </div>
-
-          <div className="pt-2 border-t border-zinc-200 dark:border-white/[0.08] flex items-center justify-between gap-3 text-xs text-zinc-500 dark:text-zinc-400 min-w-0">
-            <span className="truncate">Maintainability: <strong className="text-zinc-900 dark:text-zinc-100 font-bold font-mono">{security.maintainability_rating || 'A'}</strong></span>
-            <span className="shrink-0">Grade: <strong className="text-zinc-900 dark:text-zinc-100 font-bold font-mono">{security.security_grade || 'A'}</strong></span>
-          </div>
+          <ContributionHeatmap files={files} project={project} />
         </BentoCard>
 
         {/* Bento 8: Quick Blast Radius Predictor Control */}
-        <BentoCard colSpan="md:col-span-3 lg:col-span-4" className="!p-0 overflow-hidden">
+        <BentoCard colSpan="md:col-span-3 lg:col-span-4" overflowVisible className="!p-0 relative z-30 overflow-visible">
           <div className="flex flex-col lg:flex-row lg:items-center">
             {/* Left: Info section */}
             <div className="flex items-center gap-3.5 px-4 sm:px-5 py-4 min-w-0 flex-1">
@@ -458,22 +418,23 @@ export const OverviewDashboard: React.FC<OverviewDashboardProps> = ({
             <div className="h-px lg:h-auto lg:w-px bg-zinc-200 dark:bg-white/[0.08] mx-0 lg:mx-0 lg:self-stretch" />
 
             {/* Right: Selector section */}
-            <div className="px-4 sm:px-5 py-4 lg:w-96 shrink-0" ref={impactDropdownRef}>
+            <div className="px-4 sm:px-5 py-4 lg:w-96 shrink-0 relative" ref={impactDropdownRef}>
               <div className="relative">
                 <button
                   type="button"
                   onClick={() => setIsImpactDropdownOpen(!isImpactDropdownOpen)}
                   className="w-full flex items-center justify-between gap-3 bg-zinc-100 hover:bg-zinc-200/70 dark:bg-[#151619] dark:hover:bg-[#1E2024] border border-zinc-200 dark:border-white/[0.08] focus:border-zinc-400 dark:focus:border-zinc-500 rounded-xl px-3.5 py-2.5 text-xs text-zinc-800 dark:text-zinc-200 shadow-2xs transition-all cursor-pointer font-mono"
+                  aria-expanded={isImpactDropdownOpen}
                 >
                   <span className="truncate text-zinc-600 dark:text-zinc-300">
                     Select File to Analyze Impact...
                   </span>
-                  <ChevronDown className={`w-3.5 h-3.5 text-zinc-400 shrink-0 transition-transform ${isImpactDropdownOpen ? 'rotate-180' : ''}`} />
+                  <ChevronDown className={`w-3.5 h-3.5 text-zinc-400 shrink-0 transition-transform duration-200 ${isImpactDropdownOpen ? 'rotate-180' : ''}`} />
                 </button>
 
                 {/* Dropup - Opens UPWARDS above the bottom bar */}
                 {isImpactDropdownOpen && (
-                  <div className="absolute right-0 bottom-full mb-2 w-full min-w-72 bg-white dark:bg-[#141518] border border-zinc-200 dark:border-white/[0.1] rounded-2xl shadow-2xl p-2 z-50 animate-in fade-in duration-100">
+                  <div className="absolute right-0 bottom-full mb-2 w-full sm:min-w-80 max-w-[calc(100vw-2.5rem)] bg-white dark:bg-[#141518] border border-zinc-200 dark:border-white/[0.1] rounded-2xl shadow-2xl p-2 z-50 animate-in fade-in duration-100">
                     <div className="relative mb-2">
                       <Search className="w-3.5 h-3.5 text-zinc-400 absolute left-2.5 top-2.5" />
                       <input

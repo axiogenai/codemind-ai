@@ -1,8 +1,8 @@
 import React from 'react';
-import { Upload, GitPullRequest, Menu, X, Sun, Moon } from 'lucide-react';
+import { Upload, GitPullRequest, Menu, X } from 'lucide-react';
 import type { ProjectMeta } from '../types';
-import { useTheme } from '../context/ThemeContext';
 import { CodeMindLogo } from './CodeMindLogo';
+import { CircularThemeToggle } from './ui/CircularThemeReveal';
 
 interface HeaderProps {
   currentProject: ProjectMeta | null;
@@ -19,7 +19,6 @@ export const Header: React.FC<HeaderProps> = ({
   isMobileSidebarOpen,
   onToggleMobileSidebar
 }) => {
-  const { theme, toggleTheme } = useTheme();
 
   return (
     <header className="h-14 shrink-0 border-b border-zinc-200 dark:border-white/[0.08] bg-white/90 dark:bg-[#0A0A0A]/90 backdrop-blur-md px-4 sm:px-5 flex items-center justify-between sticky top-0 z-40 select-none transition-colors duration-200">
@@ -51,43 +50,9 @@ export const Header: React.FC<HeaderProps> = ({
         </div>
       </div>
 
-      {/* Quick Action Buttons & Theme Switcher */}
-      <div className="flex items-center space-x-2 sm:space-x-2.5">
-        {/* Modern Segmented Capsule Theme Switcher */}
-        <div 
-          role="radiogroup" 
-          aria-label="Select color theme"
-          className="flex items-center p-0.5 rounded-full bg-zinc-200/70 dark:bg-[#121316] border border-zinc-300/70 dark:border-white/[0.08] shadow-2xs select-none"
-        >
-          <button
-            type="button"
-            role="radio"
-            aria-checked={theme === 'light'}
-            title="Light Mode"
-            onClick={() => theme !== 'light' && toggleTheme()}
-            className={`p-1.5 rounded-full transition-colors cursor-pointer flex items-center justify-center outline-none focus:outline-none focus:ring-0 ${
-              theme === 'light'
-                ? 'bg-white text-amber-500 shadow-2xs border border-zinc-200/80'
-                : 'text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 border border-transparent'
-            }`}
-          >
-            <Sun className="w-3.5 h-3.5" strokeWidth={2.2} />
-          </button>
-          <button
-            type="button"
-            role="radio"
-            aria-checked={theme === 'dark'}
-            title="Dark Mode"
-            onClick={() => theme !== 'dark' && toggleTheme()}
-            className={`p-1.5 rounded-full transition-colors cursor-pointer flex items-center justify-center outline-none focus:outline-none focus:ring-0 ${
-              theme === 'dark'
-                ? 'bg-zinc-800 text-sky-400 shadow-2xs border border-zinc-700/80'
-                : 'text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 border border-transparent'
-            }`}
-          >
-            <Moon className="w-3.5 h-3.5" strokeWidth={2.2} />
-          </button>
-        </div>
+      {/* Quick Action Buttons & Gravlens Theme Switcher */}
+      <div className="flex items-center space-x-1.5 sm:space-x-2.5 shrink-0">
+        <CircularThemeToggle />
 
         {currentProject && (
           <>
@@ -101,10 +66,11 @@ export const Header: React.FC<HeaderProps> = ({
 
             <button
               onClick={onOpenImporter}
-              className="flex items-center space-x-1.5 px-3.5 py-1.5 rounded-lg bg-zinc-900 hover:bg-zinc-800 text-white dark:bg-zinc-100 dark:hover:bg-white dark:text-zinc-950 font-medium text-xs border border-zinc-900 dark:border-zinc-300 transition-colors cursor-pointer shadow-xs outline-none focus:outline-none focus:ring-0 select-none"
+              className="flex items-center space-x-1.5 px-2.5 sm:px-3.5 py-1.5 rounded-lg bg-zinc-900 hover:bg-zinc-800 text-white dark:bg-zinc-100 dark:hover:bg-white dark:text-zinc-950 font-medium text-xs border border-zinc-900 dark:border-zinc-300 transition-colors cursor-pointer shadow-xs outline-none focus:outline-none focus:ring-0 select-none"
             >
               <Upload className="w-3.5 h-3.5 text-white dark:text-zinc-900" />
-              <span>Change Codebase</span>
+              <span className="hidden sm:inline">Change Codebase</span>
+              <span className="sm:hidden">Change</span>
             </button>
           </>
         )}

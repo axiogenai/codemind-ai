@@ -21,6 +21,7 @@ import { TransformationEngineView } from './components/TransformationEngineView'
 import type { ProjectMeta, ProjectFile, KnowledgeGraphData, SecurityReport } from './types';
 import { FolderOpen, Upload, Globe, ArrowRight } from 'lucide-react';
 import { CodeMindLogo } from './components/CodeMindLogo';
+import { LoadingLines } from './components/LoadingLines';
 import { fetchProjects, scanLocalDirectory, uploadProjectZip, scrapeWebsiteUrl, analyzeProject } from './services/api';
 
 export function App() {
@@ -66,11 +67,19 @@ export function App() {
     setImporterOpen(false);
     setMobileSidebarOpen(false);
     setActiveTab('overview');
+    if (data.project?.id) {
+      try {
+        localStorage.setItem('codemind_active_project_id', data.project.id);
+      } catch {}
+    }
   };
 
   const handleSelectRecentProject = async (pId: string) => {
     setIsImporting(true);
     setImportError('');
+    try {
+      localStorage.setItem('codemind_active_project_id', pId);
+    } catch {}
     try {
       const result = await analyzeProject(pId);
       if (result && result.project) {
@@ -88,12 +97,18 @@ export function App() {
     }
   };
 
-  // Load existing projects on startup and auto-activate the most recent one
+  // Load existing projects on startup and auto-activate the most recent/active one
   useEffect(() => {
     fetchProjects().then(projs => {
       if (projs && projs.length > 0) {
         setRecentProjects(projs);
-        handleSelectRecentProject(projs[0].id);
+        let savedId: string | null = null;
+        try {
+          savedId = localStorage.getItem('codemind_active_project_id');
+        } catch {}
+        const matched = projs.find(p => p.id === savedId);
+        const target = matched || projs.find(p => (p as any).is_active) || projs[0];
+        handleSelectRecentProject(target.id);
       }
     });
   }, []);
@@ -103,8 +118,13 @@ export function App() {
     if (!targetPath || isImporting) return;
     setIsImporting(true);
     setImportError('');
+    const startTime = Date.now();
     try {
       const result = await scanLocalDirectory(targetPath);
+      const elapsed = Date.now() - startTime;
+      if (elapsed < 4000) {
+        await new Promise((r) => setTimeout(r, 4000 - elapsed));
+      }
       handleImportSuccess(result);
     } catch (err: any) {
       setImportError(err.message || 'Failed to scan local directory');
@@ -117,8 +137,13 @@ export function App() {
     if (!file || isImporting) return;
     setIsImporting(true);
     setImportError('');
+    const startTime = Date.now();
     try {
       const result = await uploadProjectZip(file);
+      const elapsed = Date.now() - startTime;
+      if (elapsed < 4000) {
+        await new Promise((r) => setTimeout(r, 4000 - elapsed));
+      }
       handleImportSuccess(result);
     } catch (err: any) {
       setImportError(err.message || 'Failed to parse uploaded ZIP file');
@@ -131,8 +156,13 @@ export function App() {
     if (!websiteUrlInput.trim() || isImporting) return;
     setIsImporting(true);
     setImportError('');
+    const startTime = Date.now();
     try {
       const result = await scrapeWebsiteUrl(websiteUrlInput.trim());
+      const elapsed = Date.now() - startTime;
+      if (elapsed < 4000) {
+        await new Promise((r) => setTimeout(r, 4000 - elapsed));
+      }
       handleImportSuccess(result);
     } catch (err: any) {
       setImportError(err.message || 'Failed to reverse engineer website');
@@ -140,6 +170,14 @@ export function App() {
       setIsImporting(false);
     }
   };
+
+  if (isImporting) {
+    return (
+      <div className="fixed inset-0 z-[9999] w-screen h-screen bg-zinc-50 dark:bg-[#0A0A0A] flex flex-col items-center justify-center select-none overflow-hidden transition-colors">
+        <LoadingLines />
+      </div>
+    );
+  }
 
   return (
     <div className="h-screen w-screen overflow-hidden bg-zinc-50 dark:bg-[#0A0A0A] text-zinc-900 dark:text-zinc-100 flex flex-col font-sans selection:bg-zinc-200 dark:selection:bg-zinc-800 transition-colors duration-200">
@@ -172,7 +210,7 @@ export function App() {
         <main className={`flex-1 relative bg-zinc-50 dark:bg-[#0A0A0A] min-h-0 transition-colors duration-200 ${['diagrams', 'graph'].includes(activeTab) ? 'overflow-hidden' : 'overflow-y-auto'}`}>
           {!currentProject ? (
             /* Dedicated Interactive Full-Screen Importer Hub - Precision Balanced Layout */
-            <div className="min-h-full w-full flex flex-col items-center justify-start sm:justify-center p-4 sm:p-6 md:p-8 bg-zinc-50 dark:bg-[#0A0A0A] transition-colors duration-200 relative overflow-y-auto">
+            <div className="min-h-full w-full flex flex-col items-center justify-start sm:justify-center p-3 sm:p-6 md:p-8 bg-zinc-50 dark:bg-[#0A0A0A] transition-colors duration-200 relative overflow-y-auto">
               <div className="shader-frame">
                 <PredictiveArcCanvas
                   variant="signal-particles"
@@ -182,21 +220,21 @@ export function App() {
                   brightness={1.00}
                 />
               </div>
-              <div className="max-w-xl w-full my-auto space-y-6 sm:space-y-7 animate-in fade-in duration-200 relative z-10 py-4 sm:py-6">
+              <div className="max-w-xl w-full my-auto space-y-5 sm:space-y-7 animate-in fade-in duration-200 relative z-10 py-3 sm:py-6">
                 {/* Hero Title */}
-                <div className="text-center space-y-3 flex flex-col items-center">
-                  <div className="w-14 h-14 rounded-2xl bg-white dark:bg-[#141518] border border-zinc-200/80 dark:border-white/[0.08] p-2.5 flex items-center justify-center shadow-xs">
+                <div className="text-center space-y-2.5 sm:space-y-3 flex flex-col items-center">
+                  <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-2xl bg-white dark:bg-[#141518] border border-zinc-200/80 dark:border-white/[0.08] p-2 sm:p-2.5 flex items-center justify-center shadow-xs">
                     <CodeMindLogo className="w-full h-full" />
                   </div>
-                  <div className="inline-flex items-center justify-center gap-3.5 select-none py-1">
-                    <span className="w-8 sm:w-12 h-[1px] bg-zinc-300 dark:bg-zinc-800" />
-                    <span className="text-[11px] sm:text-xs font-mono font-medium tracking-[0.2em] uppercase text-zinc-600 dark:text-zinc-400">
+                  <div className="inline-flex items-center justify-center gap-2.5 sm:gap-3.5 select-none py-1">
+                    <span className="w-6 sm:w-12 h-[1px] bg-zinc-300 dark:bg-zinc-800" />
+                    <span className="text-[10px] sm:text-xs font-mono font-medium tracking-[0.2em] uppercase text-zinc-600 dark:text-zinc-400">
                       Code Intelligence & Reverse Engineering
                     </span>
-                    <span className="w-8 sm:w-12 h-[1px] bg-zinc-300 dark:bg-zinc-800" />
+                    <span className="w-6 sm:w-12 h-[1px] bg-zinc-300 dark:bg-zinc-800" />
                   </div>
                   <h1 
-                    className="text-2xl sm:text-3xl font-extrabold text-zinc-900 dark:text-white tracking-tight leading-tight"
+                    className="text-xl sm:text-3xl font-extrabold text-zinc-900 dark:text-white tracking-tight leading-tight"
                     style={{ fontFamily: "'Unbounded', sans-serif", letterSpacing: '-0.03em' }}
                   >
                     Import Codebase to Begin
@@ -207,7 +245,7 @@ export function App() {
                 </div>
 
                 {/* Importer Card Container - Spotlight Card */}
-                <SpotlightCard className="p-5 sm:p-6 rounded-2xl border border-zinc-200/80 dark:border-white/[0.08] bg-white/70 dark:bg-[#111215]/80 backdrop-blur-xl shadow-xs space-y-4">
+                <SpotlightCard className="p-4 sm:p-6 rounded-2xl border border-zinc-200/80 dark:border-white/[0.08] bg-white/70 dark:bg-[#111215]/80 backdrop-blur-xl shadow-xs space-y-4">
                   {/* Tab Selector */}
                   <div className="grid grid-cols-3 p-1 rounded-xl bg-zinc-100/90 dark:bg-zinc-900/90 border border-zinc-200/80 dark:border-white/[0.06] gap-1 mb-4 sm:mb-4.5">
                     <button

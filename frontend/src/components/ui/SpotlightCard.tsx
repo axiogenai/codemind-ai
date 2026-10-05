@@ -4,12 +4,14 @@ interface SpotlightCardProps {
   children: React.ReactNode;
   className?: string;
   onClick?: () => void;
+  overflowVisible?: boolean;
 }
 
 export const SpotlightCard: React.FC<SpotlightCardProps> = ({
   children,
   className = '',
-  onClick
+  onClick,
+  overflowVisible = false,
 }) => {
   const divRef = useRef<HTMLDivElement>(null);
   const [position, setPosition] = useState({ x: 0, y: 0 });
@@ -37,6 +39,8 @@ export const SpotlightCard: React.FC<SpotlightCardProps> = ({
     ? 'rgba(255, 255, 255, 0.05)'
     : 'rgba(100, 116, 139, 0.08)';
 
+  const shouldBeVisible = overflowVisible || className.includes('overflow-visible');
+
   return (
     <div
       ref={divRef}
@@ -44,16 +48,18 @@ export const SpotlightCard: React.FC<SpotlightCardProps> = ({
       onMouseMove={handleMouseMove}
       onMouseEnter={() => setOpacity(1)}
       onMouseLeave={() => setOpacity(0)}
-      className={`relative overflow-hidden rounded-2xl border border-zinc-200 dark:border-white/[0.08] bg-white dark:bg-[#141518] p-5 sm:p-6 shadow-xs transition-colors duration-200 ${className}`}
+      className={`relative ${
+        shouldBeVisible ? 'overflow-visible' : 'overflow-hidden'
+      } rounded-2xl border border-zinc-200 dark:border-white/[0.08] bg-white dark:bg-[#141518] p-5 sm:p-6 shadow-xs transition-colors duration-200 ${className}`}
     >
       <div
-        className="pointer-events-none absolute -inset-px transition-opacity duration-300 rounded-2xl"
+        className="pointer-events-none absolute -inset-px transition-opacity duration-300 rounded-2xl overflow-hidden"
         style={{
           opacity,
           background: `radial-gradient(450px circle at ${position.x}px ${position.y}px, ${spotlightColor}, transparent 65%)`,
         }}
       />
-      <div className="relative z-10">{children}</div>
+      <div className={`relative z-10 ${shouldBeVisible ? 'overflow-visible' : ''}`}>{children}</div>
     </div>
   );
 };

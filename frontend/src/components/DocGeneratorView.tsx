@@ -179,9 +179,9 @@ export const DocGeneratorView: React.FC<DocGeneratorViewProps> = ({ projectId })
   };
 
   return (
-    <div className="h-[calc(100vh-4rem)] p-6 space-y-6 flex flex-col bg-zinc-50 dark:bg-[#0A0A0A] transition-colors duration-200">
+    <div className="h-[calc(100vh-4rem)] p-3.5 sm:p-5 md:p-6 space-y-4 sm:space-y-6 flex flex-col bg-zinc-50 dark:bg-[#0A0A0A] transition-colors duration-200">
       {/* Selector Header: Studio-Grade Precision Control Bar */}
-      <SpotlightCard className="p-5 md:p-6 rounded-2xl border border-zinc-200 dark:border-white/[0.08] shadow-xs flex flex-col xl:flex-row xl:items-center justify-between gap-5">
+      <SpotlightCard className="p-4 sm:p-5 md:p-6 rounded-2xl border border-zinc-200 dark:border-white/[0.08] shadow-xs flex flex-col xl:flex-row xl:items-center justify-between gap-4 sm:gap-5">
         <div className="flex items-center gap-3.5">
           <div className="w-10 h-10 rounded-xl bg-zinc-100 dark:bg-[#151619] border border-zinc-200 dark:border-white/[0.08] flex items-center justify-center text-zinc-700 dark:text-zinc-300 shadow-2xs shrink-0">
             <BookOpen className="w-4 h-4 text-sky-600 dark:text-sky-400" />
@@ -199,7 +199,7 @@ export const DocGeneratorView: React.FC<DocGeneratorViewProps> = ({ projectId })
 
         <div className="flex flex-wrap items-center gap-3 pt-1 xl:pt-0">
           {/* Segmented Tab Control */}
-          <div className="inline-flex items-center p-1 bg-zinc-100 dark:bg-[#151619] border border-zinc-200 dark:border-white/[0.06] rounded-xl gap-1">
+          <div className="flex items-center p-1 bg-zinc-100 dark:bg-[#151619] border border-zinc-200 dark:border-white/[0.06] rounded-xl gap-1 overflow-x-auto max-w-full custom-scrollbar">
             {[
               { id: 'architecture', label: 'Architecture Blueprint', icon: Layers },
               { id: 'api', label: 'REST API Spec', icon: FileText },
@@ -212,7 +212,7 @@ export const DocGeneratorView: React.FC<DocGeneratorViewProps> = ({ projectId })
                 <button
                   key={tab.id}
                   onClick={() => setActiveDoc(tab.id as any)}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-2 transition-all cursor-pointer select-none ${
+                  className={`px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-2 transition-all cursor-pointer select-none shrink-0 ${
                     isActive
                       ? 'bg-white dark:bg-[#24262B] text-zinc-900 dark:text-zinc-100 shadow-2xs border border-zinc-200 dark:border-white/[0.08]'
                       : 'text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-200 hover:bg-zinc-200/50 dark:hover:bg-white/[0.03] border border-transparent'
@@ -236,7 +236,7 @@ export const DocGeneratorView: React.FC<DocGeneratorViewProps> = ({ projectId })
 
             <button
               onClick={handleDownload}
-              className="flex items-center space-x-1.5 px-3.5 py-1.5 rounded-xl bg-zinc-900 hover:bg-zinc-800 text-white dark:bg-white dark:hover:bg-zinc-200 dark:text-zinc-950 font-semibold text-xs border border-transparent transition-colors cursor-pointer shadow-xs outline-none focus:outline-none focus:ring-0 select-none"
+              className="flex items-center space-x-1.5 px-3.5 py-1.5 rounded-xl bg-zinc-900 hover:bg-zinc-800 text-white dark:bg-zinc-100 dark:hover:bg-white dark:text-zinc-950 font-semibold text-xs border border-transparent transition-colors cursor-pointer shadow-xs outline-none focus:outline-none focus:ring-0 select-none"
             >
               <Download className="w-3.5 h-3.5" />
               <span>Export Markdown</span>
@@ -246,7 +246,7 @@ export const DocGeneratorView: React.FC<DocGeneratorViewProps> = ({ projectId })
       </SpotlightCard>
 
       {/* Main Document Viewer */}
-      <div className="flex-1 bg-white dark:bg-[#0A0A0A] rounded-2xl p-8 overflow-y-auto border border-zinc-200 dark:border-white/[0.08] text-zinc-800 dark:text-zinc-200 shadow-xs custom-scrollbar">
+      <div className="flex-1 bg-white dark:bg-[#0A0A0A] rounded-2xl p-4 sm:p-6 md:p-8 overflow-y-auto border border-zinc-200 dark:border-white/[0.08] text-zinc-800 dark:text-zinc-200 shadow-xs custom-scrollbar">
         {loading ? (
           <div className="flex flex-col items-center justify-center h-full space-y-4 text-center p-8">
             <div className="w-12 h-12 rounded-2xl bg-zinc-100 dark:bg-neutral-900 border border-zinc-200 dark:border-neutral-800 flex items-center justify-center">

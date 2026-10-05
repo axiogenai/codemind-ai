@@ -7,6 +7,7 @@ import sys
 import os
 import re
 import time
+import datetime
 from typing import Dict, Any, Optional, List
 
 # Add engine paths to sys.path
@@ -288,6 +289,8 @@ def scrape_website_url(payload: Dict[str, Any] = Body(...)):
 @app.post("/api/projects/analyze")
 def analyze_project(payload: Dict[str, Any] = Body(default={})):
     project_id = payload.get("project_id")
+    if project_id:
+        workspace_store.set_active_project(project_id)
     stored = workspace_store.get_project(project_id)
     if not stored:
         return {

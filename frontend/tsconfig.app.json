@@ -24,7 +24,8 @@
 
     /* Path mapping */
     "paths": {
-      "@/*": ["./src/*"]
+      "@/*": ["./src/*"],
+      "@bklitui/ui/charts": ["./src/components/charts/heatmap/index.tsx"]
     }
   },
   "include": ["src"]

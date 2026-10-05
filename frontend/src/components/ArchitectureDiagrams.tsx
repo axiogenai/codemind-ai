@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import mermaid from 'mermaid';
-import { GitGraph, Layers, Database, Workflow, ZoomIn, ZoomOut, Maximize2 } from 'lucide-react';
+import { GitGraph, Layers, Database, Workflow, ZoomIn, ZoomOut, Maximize2, RotateCcw, Move } from 'lucide-react';
 import { useTheme } from '../context/ThemeContext';
 import type { ProjectFile, KnowledgeGraphData } from '../types';
 
@@ -34,9 +34,17 @@ export const ArchitectureDiagrams: React.FC<ArchitectureDiagramsProps> = ({ file
   const [activeDiagram, setActiveDiagram] = useState<'component' | 'class' | 'sequence' | 'erd'>('component');
   const [svgContent, setSvgContent] = useState<string>('');
   const [zoom, setZoom] = useState<number>(1.0);
+  const [pan, setPan] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
+  const [isDragging, setIsDragging] = useState<boolean>(false);
+  const dragStartRef = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
+  const touchStartRef = useRef<{ x: number; y: number; dist?: number }>({ x: 0, y: 0 });
+  const containerRef = useRef<HTMLDivElement | null>(null);
+  const contentRef = useRef<HTMLDivElement | null>(null);
+  const naturalDimensionsRef = useRef<{ width: number; height: number }>({ width: 800, height: 600 });
 
   useEffect(() => {
     setZoom(1.0);
+    setPan({ x: 0, y: 0 });
   }, [activeDiagram]);
 
   useEffect(() => {
@@ -48,49 +56,49 @@ export const ArchitectureDiagrams: React.FC<ArchitectureDiagramsProps> = ({ file
           suppressErrorRendering: true,
           theme: 'base',
           flowchart: {
-            diagramPadding: 12,
-            nodeSpacing: 26,
-            rankSpacing: 28,
+            diagramPadding: 16,
+            nodeSpacing: 32,
+            rankSpacing: 36,
             htmlLabels: true,
             curve: 'basis'
           },
           sequence: {
-            diagramMarginX: 16,
-            diagramMarginY: 12,
-            boxMargin: 6,
-            boxTextMargin: 4,
-            noteMargin: 6,
-            messageMargin: 16
+            diagramMarginX: 20,
+            diagramMarginY: 16,
+            boxMargin: 8,
+            boxTextMargin: 6,
+            noteMargin: 8,
+            messageMargin: 20
           },
           class: {
-            diagramPadding: 12
+            diagramPadding: 16
           },
           er: {
-            diagramPadding: 12
+            diagramPadding: 16
           },
           themeVariables: {
             darkMode: isDarkMode,
             background: isDarkMode ? '#0A0A0A' : '#FAFAFA',
             mainBkg: isDarkMode ? '#121316' : '#FFFFFF',
-            nodeBorder: isDarkMode ? '#27272A' : '#E4E4E7',
+            nodeBorder: isDarkMode ? '#3F3F46' : '#E4E4E7',
             clusterBkg: 'transparent',
-            clusterBorder: isDarkMode ? '#27272A' : '#E4E4E7',
-            lineColor: isDarkMode ? '#52525B' : '#71717A',
+            clusterBorder: isDarkMode ? '#3F3F46' : '#E4E4E7',
+            lineColor: isDarkMode ? '#CBD5E1' : '#475569',
             textColor: isDarkMode ? '#E2E8F0' : '#18181B',
             primaryColor: isDarkMode ? '#141518' : '#FFFFFF',
             primaryTextColor: isDarkMode ? '#E2E8F0' : '#18181B',
-            primaryBorderColor: isDarkMode ? '#27272A' : '#E4E4E7',
+            primaryBorderColor: isDarkMode ? '#3F3F46' : '#E4E4E7',
             secondaryColor: isDarkMode ? '#141518' : '#F4F4F5',
             secondaryTextColor: isDarkMode ? '#E2E8F0' : '#18181B',
-            secondaryBorderColor: isDarkMode ? '#27272A' : '#E4E4E7',
+            secondaryBorderColor: isDarkMode ? '#3F3F46' : '#E4E4E7',
             tertiaryColor: isDarkMode ? '#141518' : '#F4F4F5',
             tertiaryTextColor: isDarkMode ? '#E2E8F0' : '#18181B',
-            tertiaryBorderColor: isDarkMode ? '#27272A' : '#E4E4E7',
+            tertiaryBorderColor: isDarkMode ? '#3F3F46' : '#E4E4E7',
             edgeLabelBackground: isDarkMode ? '#0A0A0A' : '#FAFAFA',
             actorBkg: isDarkMode ? '#141518' : '#FFFFFF',
-            actorBorder: isDarkMode ? '#27272A' : '#E4E4E7',
+            actorBorder: isDarkMode ? '#3F3F46' : '#E4E4E7',
             actorTextColor: isDarkMode ? '#E2E8F0' : '#18181B',
-            signalColor: isDarkMode ? '#71717A' : '#52525B',
+            signalColor: isDarkMode ? '#CBD5E1' : '#475569',
             signalTextColor: isDarkMode ? '#E2E8F0' : '#18181B'
           }
         });
@@ -103,23 +111,45 @@ export const ArchitectureDiagrams: React.FC<ArchitectureDiagramsProps> = ({ file
           
           // Extract natural viewBox dimensions
           const vbMatch = svg.match(/viewBox="([0-9.-]+)\s+([0-9.-]+)\s+([0-9.-]+)\s+([0-9.-]+)"/);
-          const vbWidth = vbMatch ? Math.round(parseFloat(vbMatch[3])) : 700;
-          
-          // Target max width: comfortably scaled to fit all 5 tiers within the viewport
-          const targetMaxWidth = Math.round(Math.min(Math.max(vbWidth * 0.85, 480), 660));
+          const vbWidth = vbMatch ? Math.round(parseFloat(vbMatch[3])) : 800;
+          const vbHeight = vbMatch ? Math.round(parseFloat(vbMatch[4])) : 600;
+          naturalDimensionsRef.current = { width: vbWidth, height: vbHeight };
+
+          // Render at natural diagram scale - never clamp wide architectures to 660px!
+          const renderedWidth = Math.max(vbWidth, 750);
 
           // Inject custom styling strictly scoped to this diagram's id so no styles leak to sidebar or global SVGs
+          // High-contrast, 2.2px visible connection lines with crisp arrows and readable nodes
           const customStyle = `
-            #${id} { width: 100% !important; max-width: ${targetMaxWidth}px !important; height: auto !important; display: block !important; margin: 0 auto !important; }
+            #${id} { width: ${renderedWidth}px !important; max-width: none !important; height: auto !important; display: block !important; margin: 0 auto !important; }
             #${id} .cluster rect, #${id} rect.cluster, #${id} g.cluster rect { fill: none !important; fill-opacity: 0 !important; stroke: ${isDarkMode ? '#3F3F46' : '#E4E4E7'} !important; stroke-width: 1.5px !important; stroke-dasharray: 4 4 !important; rx: 6px !important; }
-            #${id} .cluster text, #${id} .cluster span { fill: ${isDarkMode ? '#A1A1AA' : '#71717A'} !important; color: ${isDarkMode ? '#A1A1AA' : '#71717A'} !important; font-weight: 700 !important; font-size: 10px !important; letter-spacing: 0.05em !important; text-transform: uppercase !important; }
-            #${id} .node rect, #${id} .node circle, #${id} .node polygon { fill: ${isDarkMode ? '#141518' : '#FFFFFF'} !important; stroke: ${isDarkMode ? '#3F3F46' : '#D4D4D8'} !important; stroke-width: 1.5px !important; rx: 6px !important; }
+            #${id} .cluster text, #${id} .cluster span { fill: ${isDarkMode ? '#A1A1AA' : '#71717A'} !important; color: ${isDarkMode ? '#A1A1AA' : '#71717A'} !important; font-weight: 700 !important; font-size: 11px !important; letter-spacing: 0.05em !important; text-transform: uppercase !important; }
+            #${id} .node rect, #${id} .node circle, #${id} .node polygon { fill: ${isDarkMode ? '#141518' : '#FFFFFF'} !important; stroke: ${isDarkMode ? '#3F3F46' : '#D4D4D8'} !important; stroke-width: 1.6px !important; rx: 6px !important; }
             #${id} .node text { fill: ${isDarkMode ? '#F4F4F5' : '#09090B'} !important; font-size: 11px !important; font-weight: 500 !important; }
-            #${id} .edgePath path { stroke: ${isDarkMode ? '#71717A' : '#71717A'} !important; stroke-width: 1.5px !important; }
-            #${id} .marker, #${id} marker path { fill: ${isDarkMode ? '#71717A' : '#71717A'} !important; stroke: ${isDarkMode ? '#71717A' : '#71717A'} !important; }
-            #${id} .edgeLabel text, #${id} .edgeLabel span { font-size: 10px !important; font-weight: 500 !important; fill: ${isDarkMode ? '#A1A1AA' : '#52525B'} !important; }
+            #${id} .classGroup rect { fill: ${isDarkMode ? '#141518' : '#FFFFFF'} !important; stroke: ${isDarkMode ? '#3F3F46' : '#D4D4D8'} !important; stroke-width: 1.6px !important; rx: 4px !important; }
+            #${id} .classGroup text { fill: ${isDarkMode ? '#F4F4F5' : '#09090B'} !important; font-size: 11px !important; }
+            #${id} .edgePath path,
+            #${id} .flowchart-link,
+            #${id} .relation,
+            #${id} path.relation,
+            #${id} .relationshipLine,
+            #${id} .messageLine0,
+            #${id} .messageLine1,
+            #${id} .actor-line {
+              stroke: ${isDarkMode ? '#CBD5E1' : '#475569'} !important;
+              stroke-width: 2.2px !important;
+              stroke-opacity: 0.95 !important;
+            }
+            #${id} .marker,
+            #${id} marker path,
+            #${id} .arrowheadPath {
+              fill: ${isDarkMode ? '#CBD5E1' : '#475569'} !important;
+              stroke: ${isDarkMode ? '#CBD5E1' : '#475569'} !important;
+              stroke-width: 1.8px !important;
+            }
+            #${id} .edgeLabel text, #${id} .edgeLabel span { font-size: 10px !important; font-weight: 600 !important; fill: ${isDarkMode ? '#E2E8F0' : '#334155'} !important; }
             #${id} .actor { fill: ${isDarkMode ? '#141518' : '#FFFFFF'} !important; stroke: ${isDarkMode ? '#3F3F46' : '#D4D4D8'} !important; stroke-width: 1.5px !important; rx: 6px !important; }
-            #${id} text { font-family: 'Inter', ui-sans-serif, system-ui, sans-serif !important; fill: ${isDarkMode ? '#F4F4F5' : '#09090B'} !important; }
+            #${id} text { font-family: 'Inter', ui-sans-serif, system-ui, sans-serif !important; fill: ${isDarkMode ? '#F4F4F5' : '#09090B'} !important; pointer-events: none !important; }
           `;
 
           // Strip Mermaid's restrictive inline max-width, height, and width attributes on root svg tag
@@ -128,7 +158,7 @@ export const ArchitectureDiagrams: React.FC<ArchitectureDiagramsProps> = ({ file
               .replace(/\bstyle="[^"]*"/gi, '')
               .replace(/\bwidth="[^"]*"/gi, '')
               .replace(/\bheight="[^"]*"/gi, '');
-            return `<svg class="architecture-diagram-svg" style="width: 100%; max-width: ${targetMaxWidth}px; height: auto; display: block; margin: 0 auto;" ${cleanAttrs}>`;
+            return `<svg class="architecture-diagram-svg" style="width: ${renderedWidth}px; max-width: none; height: auto; display: block; margin: 0 auto;" ${cleanAttrs}>`;
           });
 
           styledSvg = styledSvg.includes('</style>')
@@ -142,6 +172,21 @@ export const ArchitectureDiagrams: React.FC<ArchitectureDiagramsProps> = ({ file
             .replace(/fill="#(?:[123][0-9a-f]{5}|2d3748|334155)"/gi, 'fill="none"');
 
           setSvgContent(styledSvg);
+
+          // Auto-calculate comfortable initial zoom to fit diagram in viewport
+          const container = containerRef.current;
+          if (container && vbWidth > 0 && vbHeight > 0) {
+            const pad = 64;
+            const availW = Math.max(container.clientWidth - pad, 300);
+            const availH = Math.max(container.clientHeight - pad, 300);
+            const scaleX = availW / vbWidth;
+            const scaleY = availH / vbHeight;
+            const fitScale = Math.min(Math.max(Number(Math.min(scaleX, scaleY).toFixed(2)), 0.3), 1.0);
+            setZoom(fitScale);
+          } else {
+            setZoom(1.0);
+          }
+          setPan({ x: 0, y: 0 });
         }
       } catch (e) {
         if (isSubscribed) {
@@ -526,6 +571,128 @@ export const ArchitectureDiagrams: React.FC<ArchitectureDiagramsProps> = ({ file
 
   const anyContains = (str: string, targets: string[]) => targets.some(t => str.includes(t));
 
+  const handleMouseDown = (e: React.MouseEvent) => {
+    if (e.button !== 0) return;
+    setIsDragging(true);
+    dragStartRef.current = {
+      x: e.clientX - pan.x,
+      y: e.clientY - pan.y,
+    };
+  };
+
+  const handleMouseMove = (e: React.MouseEvent) => {
+    if (!isDragging) return;
+    setPan({
+      x: Number((e.clientX - dragStartRef.current.x).toFixed(1)),
+      y: Number((e.clientY - dragStartRef.current.y).toFixed(1)),
+    });
+  };
+
+  const handleMouseUp = () => {
+    setIsDragging(false);
+  };
+
+  const handleTouchStart = (e: React.TouchEvent) => {
+    if (e.touches.length === 1) {
+      touchStartRef.current = {
+        x: e.touches[0].clientX - pan.x,
+        y: e.touches[0].clientY - pan.y,
+      };
+      setIsDragging(true);
+    } else if (e.touches.length === 2) {
+      const dist = Math.hypot(
+        e.touches[0].clientX - e.touches[1].clientX,
+        e.touches[0].clientY - e.touches[1].clientY
+      );
+      touchStartRef.current = {
+        x: (e.touches[0].clientX + e.touches[1].clientX) / 2 - pan.x,
+        y: (e.touches[0].clientY + e.touches[1].clientY) / 2 - pan.y,
+        dist,
+      };
+    }
+  };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    if (e.touches.length === 1 && isDragging) {
+      setPan({
+        x: Number((e.touches[0].clientX - touchStartRef.current.x).toFixed(1)),
+        y: Number((e.touches[0].clientY - touchStartRef.current.y).toFixed(1)),
+      });
+    } else if (e.touches.length === 2 && touchStartRef.current.dist) {
+      const newDist = Math.hypot(
+        e.touches[0].clientX - e.touches[1].clientX,
+        e.touches[0].clientY - e.touches[1].clientY
+      );
+      const factor = newDist / touchStartRef.current.dist;
+      touchStartRef.current.dist = newDist;
+      setZoom((prev) => Math.min(Math.max(Number((prev * factor).toFixed(2)), 0.2), 4.0));
+    }
+  };
+
+  const handleTouchEnd = () => {
+    setIsDragging(false);
+  };
+
+  const handleWheel = (e: React.WheelEvent) => {
+    e.preventDefault();
+    const container = containerRef.current;
+    if (!container) return;
+
+    const rect = container.getBoundingClientRect();
+    const mouseX = e.clientX - rect.left;
+    const mouseY = e.clientY - rect.top;
+
+    const factor = e.deltaY < 0 ? 1.15 : 0.87;
+    setZoom((prevZoom) => {
+      const nextZoom = Math.min(Math.max(Number((prevZoom * factor).toFixed(2)), 0.2), 4.0);
+      const scaleRatio = nextZoom / prevZoom;
+      setPan((prevPan) => ({
+        x: Number((mouseX - (mouseX - prevPan.x) * scaleRatio).toFixed(1)),
+        y: Number((mouseY - (mouseY - prevPan.y) * scaleRatio).toFixed(1)),
+      }));
+      return nextZoom;
+    });
+  };
+
+  const handleDoubleClick = (e: React.MouseEvent) => {
+    const container = containerRef.current;
+    if (!container) return;
+    const rect = container.getBoundingClientRect();
+    const mouseX = e.clientX - rect.left;
+    const mouseY = e.clientY - rect.top;
+
+    if (zoom < 1.25) {
+      // Zoom in to 1.8x focused on the double-clicked position
+      const targetZoom = 1.8;
+      const scaleRatio = targetZoom / zoom;
+      setPan({
+        x: Number((mouseX - (mouseX - pan.x) * scaleRatio).toFixed(1)),
+        y: Number((mouseY - (mouseY - pan.y) * scaleRatio).toFixed(1)),
+      });
+      setZoom(targetZoom);
+    } else {
+      // Reset back to fit overview
+      handleFit();
+    }
+  };
+
+  const handleFit = () => {
+    const container = containerRef.current;
+    if (container && naturalDimensionsRef.current.width > 0) {
+      const pad = 64;
+      const availW = Math.max(container.clientWidth - pad, 300);
+      const availH = Math.max(container.clientHeight - pad, 300);
+      const scaleX = availW / naturalDimensionsRef.current.width;
+      const scaleY = availH / naturalDimensionsRef.current.height;
+      const fitScale = Math.min(Math.max(Number(Math.min(scaleX, scaleY).toFixed(2)), 0.25), 1.25);
+      setZoom(fitScale);
+      setPan({ x: 0, y: 0 });
+      return;
+    }
+    setZoom(1.0);
+    setPan({ x: 0, y: 0 });
+  };
+
   return (
     <div className="h-full p-2.5 sm:p-3 space-y-2.5 flex flex-col overflow-hidden bg-zinc-50 dark:bg-[#0A0A0A] transition-colors duration-200">
       {/* Selector Header: Studio-Grade Precision Control Bar */}
@@ -541,12 +708,12 @@ export const ArchitectureDiagrams: React.FC<ArchitectureDiagramsProps> = ({ file
         </div>
 
         {/* Precision Segmented Tab Control */}
-        <div className="inline-flex items-center p-0.5 bg-zinc-100 dark:bg-[#151619] border border-zinc-200 dark:border-white/[0.06] rounded-lg">
+        <div className="flex items-center overflow-x-auto max-w-full custom-scrollbar p-0.5 bg-zinc-100 dark:bg-[#151619] border border-zinc-200 dark:border-white/[0.06] rounded-lg">
           {[
-            { id: 'component', label: 'Component Topology', icon: Layers, color: '#0284C7' },
-            { id: 'class', label: 'Class Hierarchy', icon: GitGraph, color: '#475569' },
-            { id: 'sequence', label: 'API Sequence Flow', icon: Workflow, color: '#D97706' },
-            { id: 'erd', label: 'Database ERD', icon: Database, color: '#0D9488' }
+            { id: 'component', label: 'Component Topology', shortLabel: 'Component', icon: Layers, color: '#0284C7' },
+            { id: 'class', label: 'Class Hierarchy', shortLabel: 'Class', icon: GitGraph, color: '#475569' },
+            { id: 'sequence', label: 'API Sequence Flow', shortLabel: 'Sequence', icon: Workflow, color: '#D97706' },
+            { id: 'erd', label: 'Database ERD', shortLabel: 'ERD', icon: Database, color: '#0D9488' }
           ].map((tab) => {
             const isActive = activeDiagram === tab.id;
             const Icon = tab.icon;
@@ -554,17 +721,18 @@ export const ArchitectureDiagrams: React.FC<ArchitectureDiagramsProps> = ({ file
               <button
                 key={tab.id}
                 onClick={() => setActiveDiagram(tab.id as any)}
-                className={`px-3.5 py-1.5 rounded-md text-xs font-medium flex items-center gap-2 transition-all cursor-pointer select-none ${
+                className={`px-3 py-1.5 rounded-md text-xs font-medium flex items-center gap-1.5 sm:gap-2 transition-all cursor-pointer select-none shrink-0 ${
                   isActive
                     ? 'bg-white dark:bg-[#24262B] text-zinc-900 dark:text-zinc-100 shadow-2xs border border-zinc-200 dark:border-white/[0.08]'
                     : 'text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-200 hover:bg-white/60 dark:hover:bg-white/[0.03] border border-transparent'
                 }`}
               >
                 <Icon
-                  className="w-3.5 h-3.5 transition-colors"
+                  className="w-3.5 h-3.5 transition-colors shrink-0"
                   style={{ color: isActive ? tab.color : undefined }}
                 />
-                <span>{tab.label}</span>
+                <span className="hidden sm:inline">{tab.label}</span>
+                <span className="sm:hidden">{tab.shortLabel}</span>
               </button>
             );
           })}
@@ -573,43 +741,72 @@ export const ArchitectureDiagrams: React.FC<ArchitectureDiagramsProps> = ({ file
 
       {/* Main Diagram Area with Interactive Precision Controls */}
       <div className="flex-1 bg-white dark:bg-[#0A0A0A] rounded-xl border border-zinc-200 dark:border-white/[0.08] relative shadow-2xs overflow-hidden flex flex-col min-h-0">
-        {/* Floating Precision Zoom Controls */}
-        <div className="absolute top-3 right-3 z-30 flex items-center gap-1.5 bg-white/95 dark:bg-[#141518]/90 backdrop-blur-md border border-zinc-200 dark:border-white/[0.08] rounded-lg p-1 shadow-md">
+        {/* Floating Precision Zoom & Pan Controls */}
+        <div className="absolute top-3 right-3 z-30 flex items-center gap-1.5 bg-white/95 dark:bg-[#141518]/90 backdrop-blur-md border border-zinc-200 dark:border-white/[0.08] rounded-xl p-1.5 shadow-md select-none">
+          <div className="hidden sm:flex items-center gap-1 px-2 py-0.5 text-[10px] font-mono text-zinc-400 dark:text-zinc-500 border-r border-zinc-200 dark:border-white/[0.08] mr-0.5">
+            <Move className="w-3 h-3 text-zinc-400" />
+            <span>Drag • Scroll • 2x Click</span>
+          </div>
           <button
-            onClick={() => setZoom(z => Math.max(0.4, Number((z - 0.15).toFixed(2))))}
-            title="Zoom Out"
-            className="p-1.5 hover:bg-zinc-100 dark:hover:bg-white/[0.08] rounded text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white transition-colors cursor-pointer"
+            onClick={() => setZoom(z => Math.max(0.2, Number((z - 0.2).toFixed(2))))}
+            title="Zoom Out (Scroll Down)"
+            className="p-1.5 hover:bg-zinc-100 dark:hover:bg-white/[0.08] rounded-lg text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white transition-colors cursor-pointer"
           >
             <ZoomOut className="w-3.5 h-3.5" />
           </button>
-          <span className="text-[11px] font-mono text-zinc-600 dark:text-zinc-400 px-1 select-none min-w-[42px] text-center">
+          <span className="text-[11px] font-mono font-semibold text-zinc-700 dark:text-zinc-300 px-1 select-none min-w-[44px] text-center">
             {Math.round(zoom * 100)}%
           </span>
           <button
-            onClick={() => setZoom(z => Math.min(3.0, Number((z + 0.15).toFixed(2))))}
-            title="Zoom In"
-            className="p-1.5 hover:bg-zinc-100 dark:hover:bg-white/[0.08] rounded text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white transition-colors cursor-pointer"
+            onClick={() => setZoom(z => Math.min(4.0, Number((z + 0.2).toFixed(2))))}
+            title="Zoom In (Scroll Up)"
+            className="p-1.5 hover:bg-zinc-100 dark:hover:bg-white/[0.08] rounded-lg text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white transition-colors cursor-pointer"
           >
             <ZoomIn className="w-3.5 h-3.5" />
           </button>
-          <div className="w-[1px] h-3 bg-zinc-200 dark:bg-white/[0.08] mx-0.5" />
+          <div className="w-[1px] h-3.5 bg-zinc-200 dark:border-white/[0.08] mx-0.5" />
           <button
-            onClick={() => setZoom(1.0)}
-            title="Fit to Screen (100%)"
-            className="p-1.5 hover:bg-zinc-100 dark:hover:bg-white/[0.08] rounded text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white transition-colors cursor-pointer flex items-center gap-1"
+            onClick={handleFit}
+            title="Fit to Screen"
+            className="px-2 py-1 hover:bg-zinc-100 dark:hover:bg-white/[0.08] rounded-lg text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white transition-colors cursor-pointer flex items-center gap-1.5"
           >
             <Maximize2 className="w-3.5 h-3.5" />
-            <span className="text-[10px] uppercase font-medium">Fit</span>
+            <span className="text-[10px] uppercase font-mono font-semibold">Fit</span>
+          </button>
+          <button
+            onClick={() => { setZoom(1.0); setPan({ x: 0, y: 0 }); }}
+            title="Reset to 100%"
+            className="px-2 py-1 hover:bg-zinc-100 dark:hover:bg-white/[0.08] rounded-lg text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white transition-colors cursor-pointer flex items-center gap-1.5"
+          >
+            <RotateCcw className="w-3.5 h-3.5" />
+            <span className="text-[10px] uppercase font-mono font-semibold">1:1</span>
           </button>
         </div>
 
-        {/* Scrollable Viewport */}
-        <div className="w-full flex-1 overflow-auto min-h-0 flex p-4 sm:p-6 custom-scrollbar">
+        {/* Interactive Pan & Zoom Canvas Viewport */}
+        <div 
+          ref={containerRef}
+          onMouseDown={handleMouseDown}
+          onMouseMove={handleMouseMove}
+          onMouseUp={handleMouseUp}
+          onMouseLeave={handleMouseUp}
+          onTouchStart={handleTouchStart}
+          onTouchMove={handleTouchMove}
+          onTouchEnd={handleTouchEnd}
+          onWheel={handleWheel}
+          onDoubleClick={handleDoubleClick}
+          className={`w-full flex-1 overflow-hidden relative select-none flex items-center justify-center ${
+            isDragging ? 'cursor-grabbing' : 'cursor-grab'
+          }`}
+          style={{ touchAction: 'none' }}
+        >
           <div 
-            className="w-full m-auto transition-transform duration-150 ease-out flex items-center justify-center py-2"
+            ref={contentRef}
+            className="transition-transform duration-75 ease-out inline-flex items-center justify-center p-8 pointer-events-auto"
             style={{ 
-              transform: `scale(${zoom})`, 
-              transformOrigin: zoom > 1 ? 'top center' : 'center center'
+              transform: `translate(${pan.x}px, ${pan.y}px) scale(${zoom})`, 
+              transformOrigin: 'center center',
+              willChange: 'transform'
             }}
             dangerouslySetInnerHTML={{ __html: svgContent }} 
           />

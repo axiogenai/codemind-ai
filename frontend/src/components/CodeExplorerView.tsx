@@ -68,6 +68,7 @@ export const CodeExplorerView: React.FC<CodeExplorerViewProps> = ({ files, proje
   const [copied, setCopied] = useState<boolean>(false);
   const [cursorPos, setCursorPos] = useState<{ line: number; col: number }>({ line: 1, col: 1 });
   const editorRef = useRef<any>(null);
+  const [showMobileFiles, setShowMobileFiles] = useState<boolean>(false);
 
   // Sync editor content when selected file changes
   useEffect(() => {
@@ -182,9 +183,9 @@ export const CodeExplorerView: React.FC<CodeExplorerViewProps> = ({ files, proje
   const currentLinesCount = editorCode.split('\n').length;
 
   return (
-    <div className="h-[calc(100vh-4rem)] p-6 flex space-x-6 bg-zinc-50 dark:bg-[#0A0A0A] transition-colors duration-200">
+    <div className="h-[calc(100vh-4rem)] p-3 sm:p-5 md:p-6 flex flex-col md:flex-row gap-4 md:gap-6 bg-zinc-50 dark:bg-[#0A0A0A] transition-colors duration-200 overflow-y-auto md:overflow-hidden">
       {/* File Tree List */}
-      <SpotlightCard className="w-80 border border-zinc-200 dark:border-white/[0.08] rounded-2xl p-4 space-y-3 flex flex-col shrink-0 shadow-xs">
+      <SpotlightCard className={`${showMobileFiles ? 'flex' : 'hidden md:flex'} w-full md:w-80 h-72 md:h-auto border border-zinc-200 dark:border-white/[0.08] rounded-2xl p-4 space-y-3 flex-col shrink-0 shadow-xs`}>
         <div className="flex items-center justify-between px-1 pb-2 border-b border-zinc-200 dark:border-white/[0.06]">
           <div className="flex items-center gap-2">
             <FolderTree className="w-3.5 h-3.5 text-zinc-500 dark:text-zinc-400" />
@@ -205,7 +206,10 @@ export const CodeExplorerView: React.FC<CodeExplorerViewProps> = ({ files, proje
             return (
               <button
                 key={file.path}
-                onClick={() => setSelectedFile(file)}
+                onClick={() => {
+                  setSelectedFile(file);
+                  setShowMobileFiles(false);
+                }}
                 className={`w-full px-3 py-2 rounded-xl text-left border transition-all flex items-center justify-between cursor-pointer group ${
                   isSelected
                     ? 'bg-zinc-100 dark:bg-[#1C1E26] border-zinc-300 dark:border-white/[0.14] shadow-2xs text-zinc-900 dark:text-white'
@@ -236,20 +240,29 @@ export const CodeExplorerView: React.FC<CodeExplorerViewProps> = ({ files, proje
 
       {/* Main Code & AST Inspector */}
       {selectedFile && (
-        <div className="flex-1 grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="flex-1 grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-6 min-w-0">
           {/* VS Code Studio Editor Panel */}
           <div className="lg:col-span-2 bg-white dark:bg-[#0A0A0A] border border-zinc-200 dark:border-white/[0.08] rounded-2xl flex flex-col shadow-xs overflow-hidden">
             {/* Editor Tab Header & Action Bar */}
-            <div className="bg-zinc-50 dark:bg-[#0A0A0A] px-4 py-2.5 border-b border-zinc-200 dark:border-white/[0.08] flex items-center justify-between gap-3 select-none">
-              {/* Active Tab */}
-              <div className="flex items-center space-x-2.5 min-w-0">
-                <div className="flex items-center space-x-2 px-3 py-1 rounded-lg bg-white dark:bg-[#141414] border border-zinc-200 dark:border-white/[0.08] text-xs font-mono shadow-2xs">
-                  <FileCode className={`w-3.5 h-3.5 ${getFileIconColor(selectedFile.path)}`} />
-                  <span className="text-zinc-900 dark:text-zinc-100 font-bold truncate max-w-[220px]">
+            <div className="bg-zinc-50 dark:bg-[#0A0A0A] px-3.5 sm:px-4 py-2 sm:py-2.5 border-b border-zinc-200 dark:border-white/[0.08] flex items-center justify-between gap-2.5 sm:gap-3 select-none flex-wrap sm:flex-nowrap">
+              {/* Active Tab & Mobile Files Toggle */}
+              <div className="flex items-center space-x-2 sm:space-x-2.5 min-w-0">
+                <button
+                  onClick={() => setShowMobileFiles(!showMobileFiles)}
+                  className="md:hidden flex items-center space-x-1.5 px-2.5 py-1 rounded-lg bg-zinc-100 hover:bg-zinc-200 dark:bg-[#141414] dark:hover:bg-[#1C1E26] border border-zinc-200 dark:border-white/[0.08] text-xs font-mono font-medium text-zinc-700 dark:text-zinc-300 transition-colors cursor-pointer shrink-0"
+                  title="Toggle file list"
+                >
+                  <FolderTree className="w-3.5 h-3.5 text-zinc-500" />
+                  <span>{showMobileFiles ? 'Hide Files' : 'Files'}</span>
+                </button>
+
+                <div className="flex items-center space-x-2 px-2.5 sm:px-3 py-1 rounded-lg bg-white dark:bg-[#141414] border border-zinc-200 dark:border-white/[0.08] text-xs font-mono shadow-2xs truncate">
+                  <FileCode className={`w-3.5 h-3.5 shrink-0 ${getFileIconColor(selectedFile.path)}`} />
+                  <span className="text-zinc-900 dark:text-zinc-100 font-bold truncate max-w-[140px] sm:max-w-[220px]">
                     {selectedFile.path.split('/').pop()}
                   </span>
                   {isDirty && (
-                    <span className="w-2 h-2 rounded-full bg-zinc-700 dark:bg-zinc-300 shadow-xs" title="Unsaved changes" />
+                    <span className="w-2 h-2 rounded-full bg-zinc-700 dark:bg-zinc-300 shadow-xs shrink-0" title="Unsaved changes" />
                   )}
                 </div>
                 <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-zinc-100 dark:bg-[#141414] text-zinc-500 dark:text-zinc-400 border border-zinc-200 dark:border-white/[0.04] hidden sm:inline-block">
@@ -258,7 +271,7 @@ export const CodeExplorerView: React.FC<CodeExplorerViewProps> = ({ files, proje
               </div>
 
               {/* Editor Controls & Action Triggers */}
-              <div className="flex items-center space-x-1.5 shrink-0">
+              <div className="flex items-center space-x-1.5 shrink-0 ml-auto">
                 {/* Save Button */}
                 <button
                   onClick={handleSave}

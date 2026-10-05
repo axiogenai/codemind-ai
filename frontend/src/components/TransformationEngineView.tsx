@@ -257,16 +257,16 @@ export const TransformationEngineView: React.FC<Props> = ({ projectId, projectFi
   ];
 
   return (
-    <div className="h-[calc(100vh-4rem)] p-5 md:p-8 overflow-y-auto space-y-6 bg-zinc-50 dark:bg-[#0A0A0A] transition-colors duration-200 custom-scrollbar">
+    <div className="h-[calc(100vh-4rem)] p-3.5 sm:p-5 md:p-8 overflow-y-auto space-y-4 sm:space-y-6 bg-zinc-50 dark:bg-[#0A0A0A] transition-colors duration-200 custom-scrollbar">
       {/* 1. Header Banner */}
-      <SpotlightCard className="p-5 md:p-6 rounded-2xl border border-zinc-200 dark:border-white/[0.08] shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div className="flex items-center space-x-4">
-          <div className="p-3 rounded-xl bg-zinc-100 dark:bg-[#151619] border border-zinc-200 dark:border-white/[0.08] text-zinc-800 dark:text-zinc-200 shadow-2xs">
+      <SpotlightCard className="p-4 sm:p-5 md:p-6 rounded-2xl border border-zinc-200 dark:border-white/[0.08] shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div className="flex items-center space-x-3.5 sm:space-x-4">
+          <div className="p-2.5 sm:p-3 rounded-xl bg-zinc-100 dark:bg-[#151619] border border-zinc-200 dark:border-white/[0.08] text-zinc-800 dark:text-zinc-200 shadow-2xs shrink-0">
             <RefreshCw className="w-5 h-5" />
           </div>
           <div>
-            <div className="flex flex-wrap items-center gap-2.5">
-              <h2 className="text-xl font-bold text-zinc-900 dark:text-white tracking-tight">Repository Transformation Engine</h2>
+            <div className="flex flex-wrap items-center gap-2 sm:gap-2.5">
+              <h2 className="text-lg sm:text-xl font-bold text-zinc-900 dark:text-white tracking-tight">Repository Transformation Engine</h2>
               <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-md text-[11px] font-semibold bg-zinc-100 dark:bg-white/[0.06] text-zinc-700 dark:text-zinc-300 border border-zinc-200 dark:border-white/[0.08]">
                 <span className="w-1.5 h-1.5 rounded-full bg-zinc-500 dark:bg-zinc-300" />
                 <span>Universal Synthesis Active</span>
@@ -290,7 +290,7 @@ export const TransformationEngineView: React.FC<Props> = ({ projectId, projectFi
       </SpotlightCard>
 
       {/* 2. Executive Telemetry Strip (Bklit UI dense metrics archetype) */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3.5">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-3.5">
         <SpotlightCard className="p-4 rounded-xl border border-zinc-200 dark:border-white/[0.08]">
           <div className="flex items-center justify-between text-zinc-500 dark:text-zinc-400 text-xs">
             <span className="font-medium">AST Normalizer</span>
@@ -329,7 +329,7 @@ export const TransformationEngineView: React.FC<Props> = ({ projectId, projectFi
       </div>
 
       {/* 3. AI Transformation Prompt Input & Cognitive Status */}
-      <SpotlightCard className="p-6 md:p-8 rounded-2xl border border-zinc-200 dark:border-white/[0.08] shadow-xs space-y-6">
+      <SpotlightCard className="p-4 sm:p-6 md:p-8 rounded-2xl border border-zinc-200 dark:border-white/[0.08] shadow-xs space-y-4 sm:space-y-6">
         {/* Cognitive AI Brain Status Bar */}
         <div className="p-3.5 rounded-xl bg-zinc-100 dark:bg-[#121316] border border-zinc-200 dark:border-white/[0.08] flex flex-wrap items-center justify-between gap-3 text-xs mb-2">
           <div className="flex items-center space-x-2.5">

@@ -18,6 +18,7 @@ export interface ProjectFile {
   code: string;
   lines: number;
   language: string;
+  created_at?: string;
   symbols: {
     classes: string[];
     functions: string[];

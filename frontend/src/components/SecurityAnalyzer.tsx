@@ -28,9 +28,9 @@ export const SecurityAnalyzer: React.FC<SecurityAnalyzerProps> = ({ security }) 
   };
 
   return (
-    <div className="h-[calc(100vh-4rem)] p-6 space-y-6 overflow-y-auto bg-zinc-50 dark:bg-[#0A0A0A] transition-colors duration-200">
+    <div className="h-[calc(100vh-4rem)] p-3.5 sm:p-5 md:p-6 space-y-4 sm:space-y-6 overflow-y-auto bg-zinc-50 dark:bg-[#0A0A0A] transition-colors duration-200">
       {/* Header Summary Panel */}
-      <SpotlightCard className="p-6 rounded-2xl flex flex-col md:flex-row items-center justify-between gap-6 shadow-xs border border-zinc-200 dark:border-white/[0.08]">
+      <SpotlightCard className="p-4 sm:p-6 rounded-2xl flex flex-col md:flex-row items-center justify-between gap-4 sm:gap-6 shadow-xs border border-zinc-200 dark:border-white/[0.08]">
         <div className="space-y-2">
           <div className="flex items-center space-x-2">
             <span className="p-1.5 rounded-lg bg-zinc-100 dark:bg-zinc-800/80 text-zinc-600 dark:text-zinc-300 border border-zinc-200 dark:border-white/[0.06]">
@@ -40,7 +40,7 @@ export const SecurityAnalyzer: React.FC<SecurityAnalyzerProps> = ({ security }) 
               AST Security & Code Smell Audit
             </span>
           </div>
-          <h2 className="text-2xl font-bold text-zinc-900 dark:text-white tracking-tight">
+          <h2 className="text-xl sm:text-2xl font-bold text-zinc-900 dark:text-white tracking-tight">
             Security Grade: <span className="font-mono text-zinc-900 dark:text-zinc-100">{security.security_grade}</span>{' '}
             <span className="text-xs font-normal text-zinc-500 dark:text-zinc-400 font-mono">
               ({security.health_score}/100 Health Score)
@@ -68,8 +68,8 @@ export const SecurityAnalyzer: React.FC<SecurityAnalyzerProps> = ({ security }) 
       </SpotlightCard>
 
       {/* Filter Tabs */}
-      <div className="flex items-center justify-between border-b border-zinc-200 dark:border-white/[0.08] pb-3">
-        <div className="inline-flex items-center p-1 bg-zinc-100 dark:bg-[#151619] border border-zinc-200 dark:border-white/[0.06] rounded-xl gap-1">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-zinc-200 dark:border-white/[0.08] pb-3">
+        <div className="flex items-center p-1 bg-zinc-100 dark:bg-[#151619] border border-zinc-200 dark:border-white/[0.06] rounded-xl gap-1 overflow-x-auto max-w-full custom-scrollbar">
           {(['ALL', 'CRITICAL', 'HIGH', 'MEDIUM', 'LOW'] as const).map(tab => (
             <button
               key={tab}

@@ -199,61 +199,61 @@ export const AIChatConsole: React.FC<AIChatConsoleProps> = ({ projectId, selecte
   };
 
   return (
-    <div className="h-[calc(100vh-4rem)] p-6 flex flex-col space-y-4 bg-zinc-50 dark:bg-[#0A0A0A] transition-colors duration-200">
+    <div className="h-[calc(100vh-4rem)] p-3.5 sm:p-5 md:p-6 flex flex-col space-y-3 sm:space-y-4 bg-zinc-50 dark:bg-[#0A0A0A] transition-colors duration-200">
       {/* Header Bar */}
-      <div className="p-3.5 rounded-2xl flex items-center justify-between border border-zinc-200 dark:border-white/[0.08] bg-white dark:bg-[#0E0F12] shadow-2xs">
+      <div className="p-3 sm:p-3.5 rounded-2xl flex items-center justify-between border border-zinc-200 dark:border-white/[0.08] bg-white dark:bg-[#0E0F12] shadow-2xs">
         <div className="flex items-center space-x-3">
-          <div className="p-2 rounded-xl bg-zinc-100 dark:bg-[#151619] text-sky-600 dark:text-sky-400 border border-zinc-200 dark:border-white/[0.08] shadow-2xs">
+          <div className="p-2 rounded-xl bg-zinc-100 dark:bg-[#151619] text-sky-600 dark:text-sky-400 border border-zinc-200 dark:border-white/[0.08] shadow-2xs shrink-0">
             <RefreshCw className="w-4 h-4" />
           </div>
-          <div>
-            <h3 className="text-sm font-semibold text-zinc-900 dark:text-white tracking-tight flex items-center gap-2">
-              Context-Aware AI RAG Assistant
+          <div className="min-w-0">
+            <h3 className="text-sm font-semibold text-zinc-900 dark:text-white tracking-tight flex items-center gap-2 flex-wrap">
+              <span>Context-Aware AI RAG Assistant</span>
               {selectedSymbol && (
-                <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-[11px] font-mono font-medium bg-zinc-100 dark:bg-[#151619] text-zinc-700 dark:text-zinc-200 border border-zinc-200 dark:border-white/[0.08] shadow-2xs">
-                  <span className="w-1.5 h-1.5 rounded-full bg-sky-500" />
+                <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-[11px] font-mono font-medium bg-zinc-100 dark:bg-[#151619] text-zinc-700 dark:text-zinc-200 border border-zinc-200 dark:border-white/[0.08] shadow-2xs truncate">
+                  <span className="w-1.5 h-1.5 rounded-full bg-sky-500 shrink-0" />
                   <span className="text-zinc-500 font-sans text-[10px]">Target:</span>
-                  <span className="text-sky-600 dark:text-sky-400">{selectedSymbol.label}</span>
+                  <span className="text-sky-600 dark:text-sky-400 truncate">{selectedSymbol.label}</span>
                 </span>
               )}
             </h3>
-            <p className="text-xs text-zinc-500 dark:text-zinc-400 font-normal">Grounded in Universal AST, Vector Embeddings, and Cognitive Intelligence</p>
+            <p className="text-xs text-zinc-500 dark:text-zinc-400 font-normal truncate">Grounded in Universal AST, Vector Embeddings, and Cognitive Intelligence</p>
           </div>
         </div>
       </div>
 
       {/* Suggested Quick Prompts */}
-      <div className="flex flex-wrap items-center gap-2">
+      <div className="flex items-center gap-2 overflow-x-auto flex-nowrap sm:flex-wrap pb-1 custom-scrollbar">
         {suggestedPrompts.map((prompt, idx) => (
           <button
             key={idx}
             onClick={() => handleSend(prompt)}
             disabled={loading}
-            className="px-3.5 py-1.5 rounded-xl bg-white dark:bg-zinc-900/80 border border-zinc-200 dark:border-zinc-800 hover:border-zinc-300 dark:hover:border-zinc-700 text-xs text-zinc-700 dark:text-zinc-300 hover:text-zinc-900 dark:hover:text-white hover:bg-zinc-100 dark:hover:bg-zinc-800/80 transition-colors text-left flex items-center space-x-2 cursor-pointer disabled:opacity-50 shadow-2xs outline-none focus:outline-none focus:ring-0 select-none"
+            className="px-3 py-1.5 rounded-xl bg-white dark:bg-zinc-900/80 border border-zinc-200 dark:border-zinc-800 hover:border-zinc-300 dark:hover:border-zinc-700 text-xs text-zinc-700 dark:text-zinc-300 hover:text-zinc-900 dark:hover:text-white hover:bg-zinc-100 dark:hover:bg-zinc-800/80 transition-colors text-left flex items-center space-x-2 cursor-pointer disabled:opacity-50 shadow-2xs outline-none focus:outline-none focus:ring-0 select-none shrink-0"
           >
-            <Terminal className="w-3 h-3 text-zinc-400" />
-            <span>{prompt}</span>
+            <Terminal className="w-3 h-3 text-zinc-400 shrink-0" />
+            <span className="truncate max-w-[280px] sm:max-w-none">{prompt}</span>
           </button>
         ))}
       </div>
 
       {/* Main Chat Thread */}
-      <div className="flex-1 overflow-y-auto space-y-4 pr-2 custom-scrollbar">
+      <div className="flex-1 overflow-y-auto space-y-4 pr-1 sm:pr-2 custom-scrollbar">
         {messages.map((msg, idx) => (
           <div
             key={idx}
-            className={`flex items-start space-x-3 ${msg.sender === 'user' ? 'justify-end' : 'justify-start'}`}
+            className={`flex items-start space-x-2.5 sm:space-x-3 ${msg.sender === 'user' ? 'justify-end' : 'justify-start'}`}
           >
             {msg.sender === 'ai' && (
-              <div className="w-8 h-8 rounded-xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 flex items-center justify-center shrink-0 mt-1 text-zinc-700 dark:text-zinc-300 shadow-2xs">
+              <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 flex items-center justify-center shrink-0 mt-1 text-zinc-700 dark:text-zinc-300 shadow-2xs">
                 <Bot className="w-4 h-4" />
               </div>
             )}
 
             <div
-              className={`rounded-2xl p-4.5 space-y-3 transition-all ${
+              className={`rounded-2xl p-3.5 sm:p-4.5 space-y-3 transition-all ${
                 msg.sender === 'user'
-                  ? 'max-w-xl bg-zinc-900 dark:bg-zinc-800 text-white border border-zinc-800 dark:border-zinc-700 shadow-xs'
+                  ? 'max-w-[85%] sm:max-w-xl bg-zinc-900 dark:bg-zinc-800 text-white border border-zinc-800 dark:border-zinc-700 shadow-xs'
                   : 'w-full max-w-4xl xl:max-w-5xl bg-white dark:bg-[#111215] text-zinc-800 dark:text-zinc-200 border border-zinc-200 dark:border-white/[0.08] shadow-xs'
               }`}
             >

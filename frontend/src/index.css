@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700&family=Outfit:wght@500;600;700;800&family=Space+Grotesk:wght@600;700;800&family=Unbounded:wght@600;700;800;900&family=Syne:wght@700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700&family=Outfit:wght@500;600;700;800&family=Space+Grotesk:wght@600;700;800&family=Unbounded:wght@600;700;800;900&family=Syne:wght@700;800&family=Poppins:wght@400;500;600;700&display=swap');
 @import "tailwindcss";
 @plugin "@tailwindcss/typography";
 
@@ -568,5 +568,73 @@ button, input, select, textarea, [role="button"] {
 button:focus, button:focus-visible {
   outline: none !important;
   box-shadow: none !important;
+}
+
+/* Gravlens Circular Theme Reveal View Transition */
+::view-transition-group(root) {
+  animation: none !important;
+}
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation: none !important;
+  mix-blend-mode: normal !important;
+}
+html[data-theme-transition="light"]::view-transition-old(root) {
+  z-index: 1 !important;
+}
+html[data-theme-transition="light"]::view-transition-new(root) {
+  z-index: 2 !important;
+}
+html[data-theme-transition="dark"]::view-transition-old(root) {
+  z-index: 2 !important;
+}
+html[data-theme-transition="dark"]::view-transition-new(root) {
+  z-index: 1 !important;
+}
+
+html[data-theme-transition],
+html[data-theme-transition] *,
+html[data-theme-transition] *::before,
+html[data-theme-transition] *::after {
+  transition: none !important;
+}
+
+/* Gravlens Circular Theme Toggle Button */
+.ctr-toggle {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: space-between;
+  width: 62px;
+  height: 32px;
+  padding: 3px;
+  border: 1px solid var(--border);
+  border-radius: 9999px;
+  background: var(--card);
+  color: var(--foreground);
+  cursor: pointer;
+  user-select: none;
+  transition: background-color 0.2s ease, border-color 0.2s ease;
+}
+.ctr-toggle:focus-visible {
+  outline: 2px solid var(--foreground);
+  outline-offset: 2px;
+}
+.ctr-toggle:disabled {
+  cursor: wait;
+  opacity: 0.6;
+}
+.ctr-icon {
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 9999px;
+  color: var(--muted-foreground);
+  transition: background-color 0.2s cubic-bezier(0.4, 0, 0.2, 1), color 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.ctr-icon.active {
+  background: var(--foreground);
+  color: var(--background);
 }
 
