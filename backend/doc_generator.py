@@ -170,12 +170,12 @@ class DocumentationGeneratorEngine:
         def safe_label(raw: str) -> str:
             return raw.replace('"', "'").replace('<', '‹').replace('>', '›').replace('&', '+')
 
-        # Compact, high-contrast theme classes
-        markdown += "    classDef clientNode fill:#0284C7,stroke:#38BDF8,stroke-width:1.5px,color:#FFFFFF;\n"
-        markdown += "    classDef entryNode fill:#1E293B,stroke:#38BDF8,stroke-width:1.5px,color:#F8FAFC;\n"
-        markdown += "    classDef apiNode fill:#312E81,stroke:#818CF8,stroke-width:1.5px,color:#EEF2FF;\n"
-        markdown += "    classDef engineNode fill:#0F172A,stroke:#64748B,stroke-width:1.5px,color:#F1F5F9;\n"
-        markdown += "    classDef dataNode fill:#064E3B,stroke:#10B981,stroke-width:1.5px,color:#ECFDF5;\n\n"
+        # Titanium monochrome, accessible classes (Zero banned colors)
+        markdown += "    classDef clientNode fill:#18181B,stroke:#71717A,stroke-width:1.5px,color:#FFFFFF;\n"
+        markdown += "    classDef entryNode fill:#18181B,stroke:#52525B,stroke-width:1.5px,color:#F4F4F5;\n"
+        markdown += "    classDef apiNode fill:#18181B,stroke:#71717A,stroke-width:1.5px,color:#F4F4F5;\n"
+        markdown += "    classDef engineNode fill:#18181B,stroke:#52525B,stroke-width:1.5px,color:#F4F4F5;\n"
+        markdown += "    classDef dataNode fill:#18181B,stroke:#71717A,stroke-width:1.5px,color:#F4F4F5;\n\n"
 
         markdown += '    Client["Client / User Interface"]:::clientNode\n\n'
 
@@ -193,7 +193,7 @@ class DocumentationGeneratorEngine:
         # Tier 2 Subgraph
         t2_ids = []
         if sel_tier2:
-            markdown += '    subgraph T2 ["2. API & Gateway Layer"]\n'
+            markdown += '    subgraph T2 ["2. API & Gateway Layer (HTTP / REST)"]\n'
             for f in sel_tier2:
                 cid = clean_id(f.get("path", ""))
                 lbl = safe_label(f.get("path", "").split("/")[-1])
@@ -204,7 +204,7 @@ class DocumentationGeneratorEngine:
         # Tier 3 Subgraph
         t3_ids = []
         if sel_tier3:
-            markdown += '    subgraph T3 ["3. Core Logic & Engines"]\n'
+            markdown += '    subgraph T3 ["3. Core Logic & Engines (Service Dispatch)"]\n'
             for f in sel_tier3:
                 cid = clean_id(f.get("path", ""))
                 lbl = safe_label(f.get("path", "").split("/")[-1])
@@ -215,7 +215,7 @@ class DocumentationGeneratorEngine:
         # Tier 4 Subgraph
         t4_ids = []
         if sel_tier4:
-            markdown += '    subgraph T4 ["4. AST & Data Store"]\n'
+            markdown += '    subgraph T4 ["4. Data & AST Store (Queries & Persists)"]\n'
             for f in sel_tier4:
                 cid = clean_id(f.get("path", ""))
                 lbl = safe_label(f.get("path", "").split("/")[-1])
@@ -231,19 +231,19 @@ class DocumentationGeneratorEngine:
 
         # Flow from T1 -> T2
         if t1_ids and t2_ids:
-            markdown += f'    {t1_ids[0]} -->|HTTP REST| {t2_ids[0]}\n'
+            markdown += f'    {t1_ids[0]} --> {t2_ids[0]}\n'
             if len(t1_ids) > 1 and len(t2_ids) > 1:
                 markdown += f'    {t1_ids[1]} -.-> {t2_ids[1]}\n'
 
         # Flow from T2 -> T3
         if t2_ids and t3_ids:
-            markdown += f'    {t2_ids[0]} -->|Dispatches| {t3_ids[0]}\n'
+            markdown += f'    {t2_ids[0]} --> {t3_ids[0]}\n'
             if len(t2_ids) > 1 and len(t3_ids) > 1:
                 markdown += f'    {t2_ids[1]} -.-> {t3_ids[1]}\n'
 
         # Flow from T3 -> T4
         if t3_ids and t4_ids:
-            markdown += f'    {t3_ids[0]} -->|Queries & Persists| {t4_ids[0]}\n'
+            markdown += f'    {t3_ids[0]} --> {t4_ids[0]}\n'
             if len(t3_ids) > 1 and len(t4_ids) > 1:
                 markdown += f'    {t3_ids[1]} -.-> {t4_ids[1]}\n'
 
