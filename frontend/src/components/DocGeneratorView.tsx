@@ -23,6 +23,7 @@ const MermaidDiagramBlock: React.FC<MermaidDiagramBlockProps> = ({ code, isDarkM
   const [pan, setPan] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
   const [isDragging, setIsDragging] = useState<boolean>(false);
   const [copiedCode, setCopiedCode] = useState<boolean>(false);
+  const initialZoomRef = useRef<number>(1.0);
   const containerRef = useRef<HTMLDivElement | null>(null);
   const dragStartRef = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
   const panStartRef = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
@@ -114,17 +115,23 @@ const MermaidDiagramBlock: React.FC<MermaidDiagramBlockProps> = ({ code, isDarkM
         // Clean up error divs from body
         document.querySelectorAll('[id^="dmermaid"], .error-icon, #mermaid-error').forEach(el => el.remove());
 
-        // Inject scoped CSS styling for high-contrast, titanium precision
+        // Extract natural viewBox dimensions
+        const vbMatch = svg.match(/viewBox="([0-9.-]+)\s+([0-9.-]+)\s+([0-9.-]+)\s+([0-9.-]+)"/);
+        const vbWidth = vbMatch ? Math.round(parseFloat(vbMatch[3])) : 700;
+        const vbHeight = vbMatch ? Math.round(parseFloat(vbMatch[4])) : 600;
+
+        // Inject scoped CSS styling for high-contrast, titanium precision at natural diagram scale
         const scopedCss = `
           #${id} {
-            width: 100% !important;
-            height: auto !important;
+            width: ${vbWidth}px !important;
+            height: ${vbHeight}px !important;
             max-width: none !important;
             display: block !important;
             margin: 0 auto !important;
           }
           #${id} .cluster rect, #${id} rect.cluster, #${id} g.cluster rect {
-            fill: ${isDarkMode ? 'rgba(255, 255, 255, 0.02)' : 'rgba(0, 0, 0, 0.02)'} !important;
+            fill: none !important;
+            fill-opacity: 0 !important;
             stroke: ${isDarkMode ? '#3F3F46' : '#E4E4E7'} !important;
             stroke-width: 1.5px !important;
             stroke-dasharray: 4 4 !important;
@@ -176,10 +183,33 @@ const MermaidDiagramBlock: React.FC<MermaidDiagramBlockProps> = ({ code, isDarkM
             .replace(/\bstyle="[^"]*"/gi, '')
             .replace(/\bwidth="[^"]*"/gi, '')
             .replace(/\bheight="[^"]*"/gi, '');
-          return `<svg ${cleanAttrs}><style>${scopedCss}</style>`;
+          return `<svg class="architecture-diagram-svg" style="width: ${vbWidth}px; height: ${vbHeight}px; max-width: none; display: block; margin: 0 auto;" ${cleanAttrs}><style>${scopedCss}</style>`;
         });
 
+        cleanSvg = cleanSvg
+          .replace(/(<g[^>]*class="[^"]*cluster[^"]*"[^>]*>[\s\S]*?<rect[^>]*)(fill="[^"]*")/gi, '$1fill="none" fill-opacity="0"')
+          .replace(/(<rect[^>]*class="[^"]*cluster[^"]*"[^>]*)(fill="[^"]*")/gi, '$1fill="none" fill-opacity="0"')
+          .replace(/fill="#(?:[123][0-9a-f]{5}|2d3748|334155)"/gi, 'fill="none"');
+
         setSvgHtml(cleanSvg);
+
+        // Auto-calculate comfortable initial zoom to fit whole diagram in container
+        const container = containerRef.current;
+        if (container && vbWidth > 0 && vbHeight > 0) {
+          const padW = 48;
+          const padH = 48;
+          const availW = Math.max(container.clientWidth - padW, 280);
+          const availH = Math.max(container.clientHeight - padH, 280);
+          const scaleX = availW / vbWidth;
+          const scaleY = availH / vbHeight;
+          const fitScale = Math.min(Math.max(Number(Math.min(scaleX, scaleY).toFixed(2)), 0.3), 1.0);
+          setZoom(fitScale);
+          initialZoomRef.current = fitScale;
+        } else {
+          setZoom(1.0);
+          initialZoomRef.current = 1.0;
+        }
+        setPan({ x: 0, y: 0 });
       } catch (err) {
         console.error('Mermaid render error:', err);
       }
@@ -239,7 +269,7 @@ const MermaidDiagramBlock: React.FC<MermaidDiagramBlockProps> = ({ code, isDarkM
         e.touches[0].clientY - e.touches[1].clientY
       );
       const factor = dist / touchStartRef.current.dist;
-      setZoom(prev => Math.min(Math.max(Number((prev * factor).toFixed(2)), 0.4), 2.5));
+      setZoom(prev => Math.min(Math.max(Number((prev * factor).toFixed(2)), 0.3), 2.5));
       touchStartRef.current.dist = dist;
     }
   };
@@ -247,7 +277,7 @@ const MermaidDiagramBlock: React.FC<MermaidDiagramBlockProps> = ({ code, isDarkM
   const handleTouchEnd = () => setIsDragging(false);
 
   const handleReset = () => {
-    setZoom(1.0);
+    setZoom(initialZoomRef.current);
     setPan({ x: 0, y: 0 });
   };
 
@@ -282,7 +312,7 @@ const MermaidDiagramBlock: React.FC<MermaidDiagramBlockProps> = ({ code, isDarkM
             <ZoomIn className="w-3.5 h-3.5" />
           </button>
           <button
-            onClick={() => setZoom(prev => Math.max(Number((prev - 0.15).toFixed(2)), 0.4))}
+            onClick={() => setZoom(prev => Math.max(Number((prev - 0.15).toFixed(2)), 0.3))}
             className="p-1.5 rounded-lg bg-white dark:bg-[#18191E] border border-zinc-200 dark:border-white/[0.08] text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white transition-colors cursor-pointer shadow-2xs"
             title="Zoom Out"
           >
@@ -291,7 +321,7 @@ const MermaidDiagramBlock: React.FC<MermaidDiagramBlockProps> = ({ code, isDarkM
           <button
             onClick={handleReset}
             className="px-2 py-1 rounded-lg bg-white dark:bg-[#18191E] border border-zinc-200 dark:border-white/[0.08] text-[11px] font-mono font-medium text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white transition-colors cursor-pointer shadow-2xs flex items-center gap-1"
-            title="Reset Zoom & Pan (or double-click canvas)"
+            title="Reset View (or double-click canvas)"
           >
             <RotateCcw className="w-3 h-3" />
             <span>{Math.round(zoom * 100)}%</span>
@@ -309,7 +339,7 @@ const MermaidDiagramBlock: React.FC<MermaidDiagramBlockProps> = ({ code, isDarkM
         </div>
       </div>
 
-      {/* Diagram Canvas: Pannable, Zoomable, Touch-enabled with Double-Click Reset */}
+      {/* Diagram Canvas: Auto-fitted, Pannable, Zoomable, Touch-enabled with Double-Click Reset */}
       <div
         ref={containerRef}
         onMouseDown={handleMouseDown}
@@ -320,7 +350,7 @@ const MermaidDiagramBlock: React.FC<MermaidDiagramBlockProps> = ({ code, isDarkM
         onTouchMove={handleTouchMove}
         onTouchEnd={handleTouchEnd}
         onDoubleClick={handleReset}
-        className={`relative w-full min-h-[320px] max-h-[640px] overflow-hidden rounded-xl border border-zinc-200/60 dark:border-white/[0.04] bg-white dark:bg-[#0E0F12] select-none flex items-center justify-center ${
+        className={`relative w-full h-[460px] sm:h-[540px] md:h-[600px] overflow-hidden rounded-xl border border-zinc-200/60 dark:border-white/[0.04] bg-white dark:bg-[#0E0F12] select-none flex items-center justify-center ${
           isDragging ? 'cursor-grabbing' : 'cursor-grab'
         }`}
       >
@@ -331,7 +361,7 @@ const MermaidDiagramBlock: React.FC<MermaidDiagramBlockProps> = ({ code, isDarkM
               transformOrigin: 'center center',
               transition: isDragging ? 'none' : 'transform 0.12s ease-out'
             }}
-            className="w-full h-full flex items-center justify-center p-4"
+            className="flex items-center justify-center"
             dangerouslySetInnerHTML={{ __html: svgHtml }}
           />
         ) : (
