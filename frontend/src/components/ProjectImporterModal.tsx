@@ -99,18 +99,18 @@ export const ProjectImporterModal: React.FC<ProjectImporterModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 overflow-hidden bg-black">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-2.5 sm:p-4 overflow-hidden bg-black/80">
       {/* Animated WebGL Shader Background covering previous project */}
       <MeshDriftShaderBackground className="z-0" />
-      {/* Backdrop contrast overlay */}
+      {/* Backdrop contrast overlay - subtle so shader animation shines through on mobile and desktop */}
       <div 
-        className="absolute inset-0 bg-black/60 backdrop-blur-xs z-[1]" 
+        className="absolute inset-0 bg-black/35 backdrop-blur-[2px] z-[1]" 
         onClick={() => { if (!importing) onClose(); }} 
       />
 
       <div 
         onClick={(e) => e.stopPropagation()}
-        className="relative z-10 bg-white dark:bg-[#141518] border border-zinc-200 dark:border-white/[0.08] rounded-2xl sm:rounded-3xl max-w-xl w-full p-4 sm:p-6 space-y-4 sm:space-y-6 shadow-2xl max-h-[92vh] overflow-y-auto custom-scrollbar transition-colors duration-200"
+        className="relative z-10 bg-white/95 dark:bg-[#141518]/92 backdrop-blur-md border border-zinc-200 dark:border-white/[0.08] rounded-2xl sm:rounded-3xl max-w-xl w-full p-4 sm:p-6 space-y-4 sm:space-y-6 shadow-2xl max-h-[92vh] overflow-y-auto custom-scrollbar transition-colors duration-200"
       >
         {/* Top Header */}
         <div className="flex items-center justify-between border-b border-zinc-200 dark:border-white/[0.08] pb-4">

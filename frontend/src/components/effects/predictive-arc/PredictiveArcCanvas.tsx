@@ -41,9 +41,7 @@ export const PredictiveArcCanvas: React.FC<PredictiveArcCanvasProps> = ({
     const container = containerRef.current;
     if (!canvas || !container) return;
 
-    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
-      return;
-    }
+    const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
     let animationFrameId: number;
     let cleanUpFn: (() => void) | null = null;
@@ -60,45 +58,19 @@ export const PredictiveArcCanvas: React.FC<PredictiveArcCanvasProps> = ({
       const dotRadius = 1.5;
       let time = 0;
 
-      let width = container.clientWidth || window.innerWidth;
-      let height = container.clientHeight || window.innerHeight;
-
-      const handleResize = () => {
-        if (!container || !canvas) return;
-        width = container.clientWidth || window.innerWidth;
-        height = container.clientHeight || window.innerHeight;
-        const dpr = Math.min(window.devicePixelRatio || 1, 2);
-        canvas.width = Math.floor(width * dpr);
-        canvas.height = Math.floor(height * dpr);
-        canvas.style.width = `${width}px`;
-        canvas.style.height = `${height}px`;
-        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-      };
-
-      handleResize();
-      window.addEventListener('resize', handleResize);
+      const rect = container.getBoundingClientRect();
+      let width = Math.max(Math.floor(rect.width || container.clientWidth || window.innerWidth || 360), 1);
+      let height = Math.max(Math.floor(rect.height || container.clientHeight || window.innerHeight || 640), 1);
 
       const isDark = activeMode === 'dark';
 
-      // Smooth interactive mouse parallax
+      // Smooth interactive mouse and mobile touch parallax
       let mouseX = 0;
       let mouseY = 0;
       let targetX = 0;
       let targetY = 0;
 
-      const handleMouseMove = (e: MouseEvent) => {
-        const rect = container.getBoundingClientRect();
-        targetX = ((e.clientX - rect.left) / (rect.width || window.innerWidth) - 0.5) * 2;
-        targetY = ((e.clientY - rect.top) / (rect.height || window.innerHeight) - 0.5) * 2;
-      };
-      window.addEventListener('mousemove', handleMouseMove, { passive: true });
-
-      const draw = () => {
-        animationFrameId = requestAnimationFrame(draw);
-
-        mouseX += (targetX - mouseX) * 0.05;
-        mouseY += (targetY - mouseY) * 0.05;
-
+      const renderGrid = () => {
         ctx.clearRect(0, 0, width, height);
 
         const cols = Math.floor(width / spacing);
@@ -126,11 +98,11 @@ export const PredictiveArcCanvas: React.FC<PredictiveArcCanvasProps> = ({
               const highlightCheck = Math.sin(i * 12.34) * Math.cos(j * 56.78);
 
               if (highlightCheck > 0.98) {
-                // Blue highlight
-                ctx.fillStyle = isDark ? '#3b82f6' : '#1d4ed8';
+                // Amber accent highlight (rule-compliant)
+                ctx.fillStyle = isDark ? '#f59e0b' : '#d97706';
               } else if (highlightCheck < -0.98) {
-                // Purple highlight
-                ctx.fillStyle = isDark ? '#8b5cf6' : '#5b21b6';
+                // Crisp slate highlight (rule-compliant)
+                ctx.fillStyle = isDark ? '#94a3b8' : '#475569';
               } else {
                 const alpha = Math.min(0.6, (value - 0.1) * 0.8) * brightness;
                 ctx.fillStyle = isDark
@@ -142,16 +114,71 @@ export const PredictiveArcCanvas: React.FC<PredictiveArcCanvasProps> = ({
             }
           }
         }
-
-        time += 0.02 * speed;
       };
 
-      draw();
+      const handleResize = () => {
+        if (!container || !canvas) return;
+        const r = container.getBoundingClientRect();
+        width = Math.max(Math.floor(r.width || container.clientWidth || window.innerWidth || 360), 1);
+        height = Math.max(Math.floor(r.height || container.clientHeight || window.innerHeight || 640), 1);
+        const dpr = Math.min(window.devicePixelRatio || 1, 2);
+        canvas.width = Math.floor(width * dpr);
+        canvas.height = Math.floor(height * dpr);
+        canvas.style.width = `${width}px`;
+        canvas.style.height = `${height}px`;
+        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        if (prefersReducedMotion) {
+          renderGrid();
+        }
+      };
+
+      handleResize();
+      const ro = new ResizeObserver(() => handleResize());
+      ro.observe(container);
+
+      window.addEventListener('resize', handleResize, { passive: true });
+      window.addEventListener('orientationchange', handleResize, { passive: true });
+
+      const handleMouseMove = (e: MouseEvent) => {
+        const r = container.getBoundingClientRect();
+        targetX = ((e.clientX - r.left) / (r.width || window.innerWidth || 360) - 0.5) * 2;
+        targetY = ((e.clientY - r.top) / (r.height || window.innerHeight || 640) - 0.5) * 2;
+      };
+      window.addEventListener('mousemove', handleMouseMove, { passive: true });
+
+      const handleTouchMove = (e: TouchEvent) => {
+        if (!e.touches || e.touches.length === 0) return;
+        const touch = e.touches[0];
+        const r = container.getBoundingClientRect();
+        targetX = ((touch.clientX - r.left) / (r.width || window.innerWidth || 360) - 0.5) * 2;
+        targetY = ((touch.clientY - r.top) / (r.height || window.innerHeight || 640) - 0.5) * 2;
+      };
+      window.addEventListener('touchmove', handleTouchMove, { passive: true });
+
+      if (prefersReducedMotion) {
+        renderGrid();
+      } else {
+        const draw = () => {
+          animationFrameId = requestAnimationFrame(draw);
+
+          mouseX += (targetX - mouseX) * 0.05;
+          mouseY += (targetY - mouseY) * 0.05;
+
+          renderGrid();
+
+          time += 0.02 * speed;
+        };
+
+        draw();
+      }
 
       cleanUpFn = () => {
+        ro.disconnect();
         window.removeEventListener('resize', handleResize);
+        window.removeEventListener('orientationchange', handleResize);
         window.removeEventListener('mousemove', handleMouseMove);
-        cancelAnimationFrame(animationFrameId);
+        window.removeEventListener('touchmove', handleTouchMove);
+        if (animationFrameId) cancelAnimationFrame(animationFrameId);
       };
     }
 
@@ -160,8 +187,9 @@ export const PredictiveArcCanvas: React.FC<PredictiveArcCanvasProps> = ({
     // ==============================================================
     else if ((variant as string) === 'constellation') {
       const scene = new THREE.Scene();
-      let width = container.clientWidth || window.innerWidth;
-      let height = container.clientHeight || window.innerHeight;
+      const rect = container.getBoundingClientRect();
+      let width = Math.max(Math.floor(rect.width || container.clientWidth || window.innerWidth || 360), 1);
+      let height = Math.max(Math.floor(rect.height || container.clientHeight || window.innerHeight || 640), 1);
 
       const camera = new THREE.PerspectiveCamera(75, width / height, 0.1, 1000);
       camera.position.z = 4.5;
@@ -171,8 +199,7 @@ export const PredictiveArcCanvas: React.FC<PredictiveArcCanvasProps> = ({
         renderer = new THREE.WebGLRenderer({
           canvas,
           alpha: true,
-          antialias: true,
-          powerPreference: 'high-performance'
+          antialias: false,
         });
       } catch {
         return;
@@ -256,40 +283,65 @@ export const PredictiveArcCanvas: React.FC<PredictiveArcCanvasProps> = ({
       let targetY = 0;
 
       const handleMouseMove = (e: MouseEvent) => {
-        const rect = container.getBoundingClientRect();
-        targetX = ((e.clientX - rect.left) / rect.width - 0.5) * 2;
-        targetY = -((e.clientY - rect.top) / rect.height - 0.5) * 2;
+        const r = container.getBoundingClientRect();
+        targetX = ((e.clientX - r.left) / (r.width || window.innerWidth || 360) - 0.5) * 2;
+        targetY = -((e.clientY - r.top) / (r.height || window.innerHeight || 640) - 0.5) * 2;
       };
       window.addEventListener('mousemove', handleMouseMove, { passive: true });
 
-      const animate = () => {
-        animationFrameId = requestAnimationFrame(animate);
-        mouseX += (targetX - mouseX) * 0.04;
-        mouseY += (targetY - mouseY) * 0.04;
-
-        group.rotation.y += 0.002 * speed + mouseX * 0.004;
-        group.rotation.x += 0.001 * speed + mouseY * 0.004;
-
-        renderer?.render(scene, camera);
+      const handleTouchMove = (e: TouchEvent) => {
+        if (!e.touches || e.touches.length === 0) return;
+        const touch = e.touches[0];
+        const r = container.getBoundingClientRect();
+        targetX = ((touch.clientX - r.left) / (r.width || window.innerWidth || 360) - 0.5) * 2;
+        targetY = -((touch.clientY - r.top) / (r.height || window.innerHeight || 640) - 0.5) * 2;
       };
-      animate();
+      window.addEventListener('touchmove', handleTouchMove, { passive: true });
 
       const handleResize = () => {
         if (!container || !renderer) return;
-        width = container.clientWidth;
-        height = container.clientHeight;
+        const r = container.getBoundingClientRect();
+        width = Math.max(Math.floor(r.width || container.clientWidth || window.innerWidth || 360), 1);
+        height = Math.max(Math.floor(r.height || container.clientHeight || window.innerHeight || 640), 1);
         camera.aspect = width / height;
         camera.updateProjectionMatrix();
         renderer.setSize(width, height);
         renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
         group.position.set(0, 0, 0);
+        if (prefersReducedMotion) {
+          renderer.render(scene, camera);
+        }
       };
-      window.addEventListener('resize', handleResize);
+
+      const ro = new ResizeObserver(() => handleResize());
+      ro.observe(container);
+
+      window.addEventListener('resize', handleResize, { passive: true });
+      window.addEventListener('orientationchange', handleResize, { passive: true });
+
+      if (prefersReducedMotion) {
+        renderer.render(scene, camera);
+      } else {
+        const animate = () => {
+          animationFrameId = requestAnimationFrame(animate);
+          mouseX += (targetX - mouseX) * 0.04;
+          mouseY += (targetY - mouseY) * 0.04;
+
+          group.rotation.y += 0.002 * speed + mouseX * 0.004;
+          group.rotation.x += 0.001 * speed + mouseY * 0.004;
+
+          renderer?.render(scene, camera);
+        };
+        animate();
+      }
 
       cleanUpFn = () => {
+        ro.disconnect();
         window.removeEventListener('mousemove', handleMouseMove);
+        window.removeEventListener('touchmove', handleTouchMove);
         window.removeEventListener('resize', handleResize);
-        cancelAnimationFrame(animationFrameId);
+        window.removeEventListener('orientationchange', handleResize);
+        if (animationFrameId) cancelAnimationFrame(animationFrameId);
         geometry.dispose();
         material.dispose();
         pointMaterial.dispose();
@@ -298,14 +350,13 @@ export const PredictiveArcCanvas: React.FC<PredictiveArcCanvasProps> = ({
     }
 
     // ==============================================================
-    // VARIANT 2: predictive / data-pixel (Authored Purple Pixel Arc)
+    // VARIANT 2: predictive / data-pixel (Authored Warm Amber Pixel Arc)
     // ==============================================================
     else if (variant === 'predictive' || variant === 'data-pixel') {
-      const gl = canvas.getContext('webgl', {
-        alpha: true,
-        antialias: false,
-        powerPreference: 'high-performance'
-      });
+      const gl =
+        (canvas.getContext('webgl2', { alpha: true, antialias: false }) as WebGL2RenderingContext | null) ||
+        (canvas.getContext('webgl', { alpha: true, antialias: false }) as WebGLRenderingContext | null) ||
+        (canvas.getContext('experimental-webgl') as WebGLRenderingContext | null);
       if (!gl) return;
 
       const vsSource = `
@@ -365,14 +416,14 @@ export const PredictiveArcCanvas: React.FC<PredictiveArcCanvasProps> = ({
           float pixelMask = step(cellGap, f.x) * step(f.x, 1.0 - cellGap) * 
                             step(cellGap, f.y) * step(f.y, 1.0 - cellGap);
           
-          vec3 baseColor = vec3(0.24, 0.09, 0.68);
-          vec3 glowColor = vec3(0.58, 0.28, 0.98);
-          vec3 coreColor = vec3(0.92, 0.84, 1.00);
+          vec3 baseColor = vec3(0.08, 0.09, 0.12);
+          vec3 glowColor = vec3(0.85, 0.60, 0.20);
+          vec3 coreColor = vec3(0.95, 0.92, 0.88);
           
           vec3 col = baseColor * (glow * 1.3) + glowColor * (p1 * 0.85 + p2 * 0.72) + coreColor * pow(p1 * 0.95 + p2 * 0.75, 2.4);
           
           if (u_is_dark < 0.5) {
-            col = vec3(0.38, 0.22, 0.88) * (glow * 1.4) + vec3(0.55, 0.35, 0.95) * (p1 + p2);
+            col = vec3(0.80, 0.55, 0.15) * (glow * 1.4) + vec3(0.60, 0.65, 0.70) * (p1 + p2);
           }
           
           col *= pixelMask;
@@ -421,8 +472,9 @@ export const PredictiveArcCanvas: React.FC<PredictiveArcCanvasProps> = ({
       const uBrightness = gl.getUniformLocation(program, 'u_brightness');
 
       const handleResize = () => {
-        const w = container.clientWidth || window.innerWidth;
-        const h = container.clientHeight || window.innerHeight;
+        const r = container.getBoundingClientRect();
+        const w = Math.max(Math.floor(r.width || container.clientWidth || window.innerWidth || 360), 1);
+        const h = Math.max(Math.floor(r.height || container.clientHeight || window.innerHeight || 640), 1);
         const dpr = Math.min(window.devicePixelRatio || 1, 2);
         canvas.width = w * dpr;
         canvas.height = h * dpr;
@@ -431,7 +483,12 @@ export const PredictiveArcCanvas: React.FC<PredictiveArcCanvasProps> = ({
         gl.viewport(0, 0, canvas.width, canvas.height);
       };
       handleResize();
-      window.addEventListener('resize', handleResize);
+
+      const ro = new ResizeObserver(() => handleResize());
+      ro.observe(container);
+
+      window.addEventListener('resize', handleResize, { passive: true });
+      window.addEventListener('orientationchange', handleResize, { passive: true });
 
       let mouseX = 0;
       let mouseY = 0;
@@ -439,20 +496,24 @@ export const PredictiveArcCanvas: React.FC<PredictiveArcCanvasProps> = ({
       let targetY = 0;
 
       const handleMouseMove = (e: MouseEvent) => {
-        const rect = container.getBoundingClientRect();
-        targetX = ((e.clientX - rect.left) / rect.width - 0.5) * 2;
-        targetY = -((e.clientY - rect.top) / rect.height - 0.5) * 2;
+        const r = container.getBoundingClientRect();
+        targetX = ((e.clientX - r.left) / (r.width || window.innerWidth || 360) - 0.5) * 2;
+        targetY = -((e.clientY - r.top) / (r.height || window.innerHeight || 640) - 0.5) * 2;
       };
       window.addEventListener('mousemove', handleMouseMove, { passive: true });
 
+      const handleTouchMove = (e: TouchEvent) => {
+        if (!e.touches || e.touches.length === 0) return;
+        const touch = e.touches[0];
+        const r = container.getBoundingClientRect();
+        targetX = ((touch.clientX - r.left) / (r.width || window.innerWidth || 360) - 0.5) * 2;
+        targetY = -((touch.clientY - r.top) / (r.height || window.innerHeight || 640) - 0.5) * 2;
+      };
+      window.addEventListener('touchmove', handleTouchMove, { passive: true });
+
       const startTime = performance.now();
-      const render = () => {
-        animationFrameId = requestAnimationFrame(render);
-        const elapsed = (performance.now() - startTime) * 0.001;
 
-        mouseX += (targetX - mouseX) * 0.04;
-        mouseY += (targetY - mouseY) * 0.04;
-
+      const renderFrame = (elapsed: number) => {
         gl.useProgram(program);
         gl.uniform2f(uRes, canvas.width, canvas.height);
         gl.uniform1f(uTime, elapsed);
@@ -460,15 +521,31 @@ export const PredictiveArcCanvas: React.FC<PredictiveArcCanvasProps> = ({
         gl.uniform1f(uIsDark, activeMode === 'dark' ? 1.0 : 0.0);
         gl.uniform1f(uSpeed, speed);
         gl.uniform1f(uBrightness, brightness);
-
         gl.drawArrays(gl.TRIANGLES, 0, 6);
       };
-      render();
+
+      if (prefersReducedMotion) {
+        renderFrame(0);
+      } else {
+        const render = () => {
+          animationFrameId = requestAnimationFrame(render);
+          const elapsed = (performance.now() - startTime) * 0.001;
+
+          mouseX += (targetX - mouseX) * 0.04;
+          mouseY += (targetY - mouseY) * 0.04;
+
+          renderFrame(elapsed);
+        };
+        render();
+      }
 
       cleanUpFn = () => {
-        cancelAnimationFrame(animationFrameId);
+        ro.disconnect();
+        if (animationFrameId) cancelAnimationFrame(animationFrameId);
         window.removeEventListener('resize', handleResize);
+        window.removeEventListener('orientationchange', handleResize);
         window.removeEventListener('mousemove', handleMouseMove);
+        window.removeEventListener('touchmove', handleTouchMove);
         gl.deleteBuffer(posBuffer);
         gl.deleteProgram(program);
         gl.deleteShader(vs);
@@ -481,8 +558,9 @@ export const PredictiveArcCanvas: React.FC<PredictiveArcCanvasProps> = ({
     // ==============================================================
     else {
       const scene = new THREE.Scene();
-      let width = container.clientWidth || window.innerWidth;
-      let height = container.clientHeight || window.innerHeight;
+      const rect = container.getBoundingClientRect();
+      let width = Math.max(Math.floor(rect.width || container.clientWidth || window.innerWidth || 360), 1);
+      let height = Math.max(Math.floor(rect.height || container.clientHeight || window.innerHeight || 640), 1);
 
       const camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0.1, 10);
       camera.position.z = 1;
@@ -492,7 +570,7 @@ export const PredictiveArcCanvas: React.FC<PredictiveArcCanvasProps> = ({
         renderer = new THREE.WebGLRenderer({
           canvas,
           alpha: true,
-          antialias: true
+          antialias: false
         });
       } catch {
         return;
@@ -563,17 +641,12 @@ export const PredictiveArcCanvas: React.FC<PredictiveArcCanvasProps> = ({
       scene.add(points);
 
       const startTime = performance.now();
-      const animate = () => {
-        animationFrameId = requestAnimationFrame(animate);
-        material.uniforms.time.value = (performance.now() - startTime) * 0.001 * speed;
-        renderer?.render(scene, camera);
-      };
-      animate();
 
       const handleResize = () => {
         if (!container || !renderer) return;
-        width = container.clientWidth;
-        height = container.clientHeight;
+        const r = container.getBoundingClientRect();
+        width = Math.max(Math.floor(r.width || container.clientWidth || window.innerWidth || 360), 1);
+        height = Math.max(Math.floor(r.height || container.clientHeight || window.innerHeight || 640), 1);
         const aspect = width / height;
         camera.left = -aspect;
         camera.right = aspect;
@@ -581,13 +654,35 @@ export const PredictiveArcCanvas: React.FC<PredictiveArcCanvasProps> = ({
         camera.top = 1;
         camera.updateProjectionMatrix();
         renderer.setSize(width, height);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+        if (prefersReducedMotion) {
+          renderer.render(scene, camera);
+        }
       };
+
       handleResize();
-      window.addEventListener('resize', handleResize);
+      const ro = new ResizeObserver(() => handleResize());
+      ro.observe(container);
+
+      window.addEventListener('resize', handleResize, { passive: true });
+      window.addEventListener('orientationchange', handleResize, { passive: true });
+
+      if (prefersReducedMotion) {
+        renderer.render(scene, camera);
+      } else {
+        const animate = () => {
+          animationFrameId = requestAnimationFrame(animate);
+          material.uniforms.time.value = (performance.now() - startTime) * 0.001 * speed;
+          renderer?.render(scene, camera);
+        };
+        animate();
+      }
 
       cleanUpFn = () => {
+        ro.disconnect();
         window.removeEventListener('resize', handleResize);
-        cancelAnimationFrame(animationFrameId);
+        window.removeEventListener('orientationchange', handleResize);
+        if (animationFrameId) cancelAnimationFrame(animationFrameId);
         geometry.dispose();
         material.dispose();
         renderer?.dispose();

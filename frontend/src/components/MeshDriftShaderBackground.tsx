@@ -54,26 +54,23 @@ uniform vec4 u_cursor;
 #define u_cursorRadius u_cursor.w
 
 float hash21(vec2 p) {
-#ifndef GL_FRAGMENT_PRECISION_HIGH
   p = mod(p, 31.0);
-#endif
   p = fract(p * vec2(234.34, 435.345));
   p += dot(p, p + 34.23);
   return fract(p.x * p.y);
 }
 
 float grainHash(vec2 p) {
+  p = mod(p, 128.0);
   vec3 p3 = fract(vec3(p.xyx) * 0.1031);
-  p3 += dot(p3, p3.yzx + 33.33);
+  p3 += dot(p3, p3.yzx + 19.19);
   return fract((p3.x + p3.y) * p3.z);
 }
 
 vec2 hash22(vec2 p) {
-#ifndef GL_FRAGMENT_PRECISION_HIGH
   p = mod(p, 31.0);
-#endif
   float n = sin(dot(p, vec2(41.0, 289.0)));
-  return fract(vec2(15731.743, 7892.321) * n);
+  return fract(vec2(157.317, 78.923) * n);
 }
 
 float noise(vec2 p) {
@@ -98,12 +95,14 @@ float fbm(vec2 p) {
 }
 
 vec3 srgbToLinear(vec3 c) {
+  c = clamp(c, 0.0, 1.0);
   return mix(c / 12.92, pow((c + 0.055) / 1.055, vec3(2.4)),
     step(0.04045, c));
 }
 
 vec3 linearToSrgb(vec3 c) {
-  return mix(c * 12.92, 1.055 * pow(max(c, vec3(0.0)), vec3(1.0 / 2.4)) - 0.055,
+  c = clamp(c, 0.0, 1.0);
+  return mix(c * 12.92, 1.055 * pow(max(c, vec3(0.0001)), vec3(1.0 / 2.4)) - 0.055,
     step(0.0031308, c));
 }
 
@@ -111,9 +110,9 @@ vec3 linToOklab(vec3 c) {
   float l = 0.4122214708 * c.r + 0.5363325363 * c.g + 0.0514459929 * c.b;
   float m = 0.2119034982 * c.r + 0.6806995451 * c.g + 0.1073969566 * c.b;
   float s = 0.0883024619 * c.r + 0.2817188376 * c.g + 0.6299787005 * c.b;
-  l = pow(max(l, 0.0), 1.0 / 3.0);
-  m = pow(max(m, 0.0), 1.0 / 3.0);
-  s = pow(max(s, 0.0), 1.0 / 3.0);
+  l = pow(max(l, 0.0001), 1.0 / 3.0);
+  m = pow(max(m, 0.0001), 1.0 / 3.0);
+  s = pow(max(s, 0.0001), 1.0 / 3.0);
   return vec3(
     0.2104542553 * l + 0.7936177850 * m - 0.0040720468 * s,
     1.9779984951 * l - 2.4285922050 * m + 0.4505937099 * s,
@@ -277,13 +276,20 @@ export const MeshDriftShaderBackground: React.FC<MeshDriftShaderBackgroundProps>
     if (!canvas) return;
 
     const gl =
-      canvas.getContext('webgl', {
+      (canvas.getContext('webgl2', {
         antialias: false,
         alpha: false,
         depth: false,
         stencil: false,
-        powerPreference: 'high-performance',
-      }) ||
+        preserveDrawingBuffer: false,
+      }) as WebGL2RenderingContext | null) ||
+      (canvas.getContext('webgl', {
+        antialias: false,
+        alpha: false,
+        depth: false,
+        stencil: false,
+        preserveDrawingBuffer: false,
+      }) as WebGLRenderingContext | null) ||
       (canvas.getContext('experimental-webgl') as WebGLRenderingContext | null);
 
     if (!gl) return;
@@ -366,12 +372,17 @@ export const MeshDriftShaderBackground: React.FC<MeshDriftShaderBackgroundProps>
     if (uSpaceLoc) gl.uniform4f(uSpaceLoc, 0.00, 0.00, 0.0, 0.0);
     if (uCursorLoc) gl.uniform4f(uCursorLoc, 0.0, 2.0, 0.65, 0.46);
 
-    // Resize handling with DPR capped at 2
+    // Resize handling with mobile bounds fallback and DPR capped at 2
     const resize = () => {
       if (!canvas) return;
       const dpr = Math.min(window.devicePixelRatio || 1, 2);
-      const displayWidth = Math.floor(canvas.clientWidth * dpr);
-      const displayHeight = Math.floor(canvas.clientHeight * dpr);
+      const rect = canvas.getBoundingClientRect();
+      const displayWidth = Math.floor(
+        (rect.width || canvas.clientWidth || window.innerWidth || 360) * dpr
+      );
+      const displayHeight = Math.floor(
+        (rect.height || canvas.clientHeight || window.innerHeight || 640) * dpr
+      );
 
       if (canvas.width !== displayWidth || canvas.height !== displayHeight) {
         canvas.width = Math.max(displayWidth, 1);
@@ -383,6 +394,9 @@ export const MeshDriftShaderBackground: React.FC<MeshDriftShaderBackgroundProps>
     resize();
     const resizeObserver = new ResizeObserver(() => resize());
     resizeObserver.observe(canvas);
+
+    window.addEventListener('resize', resize, { passive: true });
+    window.addEventListener('orientationchange', resize, { passive: true });
 
     let rafId: number | null = null;
     let running = true;
@@ -425,6 +439,8 @@ export const MeshDriftShaderBackground: React.FC<MeshDriftShaderBackgroundProps>
       running = false;
       if (rafId !== null) cancelAnimationFrame(rafId);
       document.removeEventListener('visibilitychange', handleVisibilityChange);
+      window.removeEventListener('resize', resize);
+      window.removeEventListener('orientationchange', resize);
       resizeObserver.disconnect();
 
       // Clean up WebGL resources
@@ -438,8 +454,8 @@ export const MeshDriftShaderBackground: React.FC<MeshDriftShaderBackgroundProps>
   return (
     <canvas
       ref={canvasRef}
-      className={`absolute inset-0 w-full h-full pointer-events-none ${className}`}
-      style={{ display: 'block' }}
+      className={`fixed inset-0 w-screen h-screen pointer-events-none ${className}`}
+      style={{ display: 'block', width: '100vw', height: '100vh', objectFit: 'cover' }}
     />
   );
 };

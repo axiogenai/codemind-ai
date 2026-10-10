@@ -211,7 +211,7 @@ export function App() {
           {!currentProject ? (
             /* Dedicated Interactive Full-Screen Importer Hub - Precision Balanced Layout */
             <div className="min-h-full w-full flex flex-col items-center justify-start sm:justify-center p-3 sm:p-6 md:p-8 bg-zinc-50 dark:bg-[#0A0A0A] transition-colors duration-200 relative overflow-y-auto">
-              <div className="shader-frame">
+              <div className="shader-frame fixed inset-0 pointer-events-none z-0 overflow-hidden w-screen h-screen">
                 <PredictiveArcCanvas
                   variant="signal-particles"
                   speed={1.00}
