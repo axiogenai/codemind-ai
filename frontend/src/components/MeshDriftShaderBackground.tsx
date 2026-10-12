@@ -372,10 +372,11 @@ export const MeshDriftShaderBackground: React.FC<MeshDriftShaderBackgroundProps>
     if (uSpaceLoc) gl.uniform4f(uSpaceLoc, 0.00, 0.00, 0.0, 0.0);
     if (uCursorLoc) gl.uniform4f(uCursorLoc, 0.0, 2.0, 0.65, 0.46);
 
-    // Resize handling with mobile bounds fallback and DPR capped at 2
+    // Resize handling with mobile bounds fallback and DPR capped at 1.0 on mobile / 1.5 on desktop
     const resize = () => {
       if (!canvas) return;
-      const dpr = Math.min(window.devicePixelRatio || 1, 2);
+      const isMobile = window.innerWidth < 768;
+      const dpr = Math.min(window.devicePixelRatio || 1, isMobile ? 1.0 : 1.5);
       const rect = canvas.getBoundingClientRect();
       const displayWidth = Math.floor(
         (rect.width || canvas.clientWidth || window.innerWidth || 360) * dpr
@@ -404,7 +405,6 @@ export const MeshDriftShaderBackground: React.FC<MeshDriftShaderBackgroundProps>
 
     const render = (currentTime: number) => {
       if (!running) return;
-      resize();
 
       const elapsedSeconds = (currentTime - startTime) * 0.001;
       const timeVal = elapsedSeconds * 0.73;

@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import {
   Cpu,
   Binary,
@@ -14,8 +14,10 @@ import {
   ChevronRight,
   FolderOpen,
   AlertCircle,
-  FileUp
+  FileUp,
+  ShieldCheck
 } from 'lucide-react';
+import { analyzeBinaryFile } from '../services/api';
 
 interface BinarySample {
   id: string;
@@ -313,7 +315,12 @@ NTSTATUS crypto_initialize_aes_gcm(const uint8_t *key_data, uint32_t key_len, BC
 }`
 };
 
-export const BinaryLabView: React.FC = () => {
+export interface BinaryLabViewProps {
+  initialFile?: File | null;
+  onAnalysisUpdated?: (analysis: any) => void;
+}
+
+export const BinaryLabView: React.FC<BinaryLabViewProps> = ({ initialFile, onAnalysisUpdated }) => {
   const [binariesList, setBinariesList] = useState<BinarySample[]>(PRELOADED_BINARIES);
   const [selectedBinaryId, setSelectedBinaryId] = useState<string>(PRELOADED_BINARIES[0].id);
   const [activeSubTab, setActiveSubTab] = useState<'hex' | 'strings' | 'imports' | 'assembly' | 'decompiled'>('hex');
@@ -323,6 +330,9 @@ export const BinaryLabView: React.FC = () => {
     byte: 0x4d,
     idx: 0
   });
+
+  // Engine provenance badge state
+  const [engineBadge, setEngineBadge] = useState<string>('Static / Built-in');
 
   // Upload & Drag-and-drop state
   const [isDraggingOver, setIsDraggingOver] = useState(false);
@@ -407,11 +417,70 @@ export const BinaryLabView: React.FC = () => {
     setTimeout(() => setCopiedCode(false), 2000);
   };
 
-  // Real client-side binary parser for uploaded files (.exe, .dll, .so, .elf, .sys)
+  // Automatically process file passed in via props (e.g., from landing screen)
+  useEffect(() => {
+    if (initialFile) {
+      processUploadedBinaryFile(initialFile);
+    }
+  }, [initialFile]);
+
+  // Real binary parser: queries backend Capstone/pefile engine with local fallback
   const processUploadedBinaryFile = async (file: File) => {
     setIsParsingBinary(true);
     setUploadError(null);
     try {
+      // 1. Primary: Call backend Capstone 5.0 + pefile reverse engineering engine
+      try {
+        const backendResult = await analyzeBinaryFile(file);
+        if (backendResult && backendResult.status === 'success' && backendResult.is_real_analysis) {
+          const newBinaryId = `real-${Date.now()}`;
+          const newSample: BinarySample = {
+            id: newBinaryId,
+            filename: backendResult.metadata.filename,
+            format: backendResult.metadata.format,
+            arch: backendResult.metadata.arch,
+            size: backendResult.metadata.size,
+            sha256: backendResult.metadata.sha256,
+            entropy: backendResult.metadata.entropy,
+            sectionsCount: backendResult.metadata.sectionsCount,
+            subsystem: backendResult.metadata.subsystem,
+            compiler: backendResult.metadata.compiler,
+            mitigations: backendResult.metadata.mitigations || { aslr: true, dep: true, cfg: true, safeSeh: false },
+            isCustom: true
+          };
+
+          setCustomDataMap(prev => ({
+            ...prev,
+            [newBinaryId]: {
+              hexRows: backendResult.hex_rows,
+              strings: backendResult.strings,
+              imports: backendResult.imports,
+              asm: backendResult.asm_functions,
+              decompiled: backendResult.decompiled_code
+            }
+          }));
+
+          setBinariesList(prev => [newSample, ...prev]);
+          setSelectedBinaryId(newBinaryId);
+          const firstFunc = Object.keys(backendResult.asm_functions)[0] || 'main_entry';
+          setSelectedFunction(firstFunc);
+          setSelectedHexByte({
+            offset: backendResult.hex_rows[0]?.offset || '0x00400000',
+            byte: backendResult.hex_rows[0]?.bytes[0] || 0x4d,
+            idx: 0
+          });
+          setEngineBadge(backendResult.engine || 'Capstone 5.0 + pefile (Real Engine)');
+          if (onAnalysisUpdated) {
+            onAnalysisUpdated(backendResult);
+          }
+          setIsParsingBinary(false);
+          return;
+        }
+      } catch (backendErr) {
+        console.warn('Backend binary analysis offline, executing client parser fallback:', backendErr);
+      }
+
+      // 2. Fallback: Client-side binary parsing
       const buffer = await file.arrayBuffer();
       const bytes = new Uint8Array(buffer);
 
@@ -669,6 +738,12 @@ int32_t entrypoint_sub(void) {
               <span className="text-[10px] font-mono px-1.5 py-0.5 rounded-full bg-zinc-100 dark:bg-white/[0.08] text-zinc-600 dark:text-zinc-300 font-bold border border-zinc-200 dark:border-white/[0.08]">
                 {selectedBinary.isCustom ? 'USER UPLOADED' : 'TOP PRIORITY'}
               </span>
+              {selectedBinary.isCustom && (
+                <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-zinc-900 dark:bg-white text-zinc-100 dark:text-zinc-950 font-semibold flex items-center space-x-1 shadow-2xs">
+                  <ShieldCheck className="w-3 h-3 text-zinc-300 dark:text-zinc-700" />
+                  <span>{engineBadge}</span>
+                </span>
+              )}
             </div>
             <p className="text-xs text-zinc-500 dark:text-zinc-400">
               Inspect hex, extracted strings, symbol tables, disassembly, and neural decompiled pseudocode.

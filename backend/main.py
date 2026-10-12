@@ -51,6 +51,9 @@ from org_knowledge_graph import org_knowledge_graph_engine
 # Phase 2 Repository Transformation Engine
 from transformation_engine import transformation_engine
 
+# Binary Reverse Engineering Engine
+from binary_engine import binary_engine
+
 app = FastAPI(
     title="CodeMind AI Platform Backend",
     description="AI-Powered Software Intelligence & Reverse Engineering Platform Engine",
@@ -788,6 +791,58 @@ def rollback_transformation(payload: Dict[str, Any] = Body(...)):
 @app.get("/api/transform/history")
 def get_transformation_history(project_id: str = "default"):
     return {"history": transformation_engine.get_history(project_id)}
+
+# ==========================================
+# Binary Lab & Reverse Engineering Endpoints
+# ==========================================
+
+@app.post("/api/binary/analyze")
+async def analyze_binary_file(file: UploadFile = File(...)):
+    """Analyze real executable binary (.exe, .dll, .so, .elf, .sys, etc.) using Capstone and pefile."""
+    try:
+        content = await file.read()
+        filename = file.filename or "binary_sample.bin"
+        result = binary_engine.analyze(content, filename)
+        return result
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Binary analysis failed: {str(e)}")
+
+@app.post("/api/binary/analyze-bytes")
+def analyze_binary_base64(payload: Dict[str, Any] = Body(...)):
+    """Analyze binary payload passed as base64 string or json."""
+    import base64
+    try:
+        filename = payload.get("filename", "binary_sample.bin")
+        b64_data = payload.get("data", "")
+        if b64_data.startswith("data:"):
+            b64_data = b64_data.split(",", 1)[1]
+        raw_bytes = base64.b64decode(b64_data)
+        return binary_engine.analyze(raw_bytes, filename)
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"Base64 binary decode failed: {str(e)}")
+
+@app.post("/api/binary/cfg")
+def get_binary_cfg(payload: Dict[str, Any] = Body(...)):
+    """Generate control flow graph basic blocks for instructions."""
+    instructions = payload.get("instructions", [])
+    return binary_engine.get_cfg(instructions)
+
+@app.post("/api/binary/tracer")
+def get_binary_call_tracer(payload: Dict[str, Any] = Body(...)):
+    """Generate call tracer hierarchy from instructions and imports."""
+    instructions = payload.get("instructions", [])
+    imports = payload.get("imports", [])
+    return binary_engine.get_call_tracer(instructions, imports)
+
+@app.post("/api/binary/diff")
+async def diff_binary_files(file1: UploadFile = File(...), file2: UploadFile = File(...)):
+    """Diff two real binary files side-by-side."""
+    try:
+        data1 = await file1.read()
+        data2 = await file2.read()
+        return binary_engine.diff_binaries(data1, file1.filename or "bin1", data2, file2.filename or "bin2")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Binary diff failed: {str(e)}")
 
 if __name__ == "__main__":
     import uvicorn

@@ -1,7 +1,7 @@
 // beui.dev/components/agents/agent-activity
 
 import { ChevronDown } from "lucide-react";
-import { AnimatePresence, motion, useReducedMotion } from "motion/react";
+import { AnimatePresence, motion } from "motion/react";
 import {
   type ReactNode,
   useCallback,
@@ -132,7 +132,6 @@ export function AgentActivity({
   className,
   contentClassName,
 }: AgentActivityProps) {
-  const reduce = useReducedMotion() ?? false;
   const baseId = useId();
   const triggerId = `${baseId}-trigger`;
   const contentId = `${baseId}-content`;
@@ -225,7 +224,7 @@ export function AgentActivity({
           <motion.span
             aria-hidden="true"
             animate={{ rotate: expanded ? 180 : 0 }}
-            transition={reduce ? { duration: 0 } : SPRING_SWAP}
+            transition={SPRING_SWAP}
             className="inline-flex shrink-0 text-zinc-400 dark:text-zinc-500 group-hover:text-zinc-700 dark:group-hover:text-zinc-300"
           >
             <ChevronDown className="size-3.5" />
@@ -253,27 +252,21 @@ export function AgentActivity({
             role="list"
             initial={false}
             animate={{ y: streamOffset }}
-            transition={reduce ? { duration: 0 } : SPRING_LAYOUT}
+            transition={SPRING_LAYOUT}
             className={cn("space-y-0.5 py-2", contentClassName)}
           >
-            <AnimatePresence mode="popLayout">
+            <AnimatePresence initial={false}>
               {items.map((item) => (
                 <motion.div
-                  layout="position"
                   key={item.id}
                   role="listitem"
-                  initial={reduce ? { opacity: 1 } : { opacity: 0, y: 6 }}
+                  initial={{ opacity: 0, y: 6 }}
                   animate={{ opacity: 1, y: 0 }}
-                  exit={reduce ? { opacity: 0 } : { opacity: 0, y: -3 }}
-                  transition={
-                    reduce
-                      ? { duration: 0 }
-                      : {
-                          opacity: { duration: 0.18, ease: EASE_OUT },
-                          y: SPRING_LAYOUT,
-                          layout: SPRING_LAYOUT,
-                        }
-                  }
+                  exit={{ opacity: 0, y: -3 }}
+                  transition={{
+                    opacity: { duration: 0.18, ease: EASE_OUT },
+                    y: SPRING_LAYOUT,
+                  }}
                 >
                   <ActivityRow item={item} />
                 </motion.div>

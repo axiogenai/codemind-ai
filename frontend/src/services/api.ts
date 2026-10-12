@@ -438,3 +438,54 @@ export async function getAiEngineStatus() {
   const res = await safeFetch(`${getApiBase()}/ai/config`);
   return res.ok ? await res.json() : null;
 }
+
+// ==========================================
+// Binary Lab & Reverse Engineering API Calls
+// ==========================================
+
+export async function analyzeBinaryFile(file: File): Promise<any> {
+  const formData = new FormData();
+  formData.append('file', file);
+  const res = await safeFetch(`${getApiBase()}/binary/analyze`, {
+    method: 'POST',
+    body: formData
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.detail || `Binary analysis failed with status ${res.status}`);
+  }
+  return await res.json();
+}
+
+export async function getBinaryCFG(instructions: any[]): Promise<any> {
+  const res = await safeFetch(`${getApiBase()}/binary/cfg`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ instructions })
+  });
+  return res.ok ? await res.json() : { blocks: [], edges: [] };
+}
+
+export async function getBinaryCallTracer(instructions: any[], imports: any[]): Promise<any> {
+  const res = await safeFetch(`${getApiBase()}/binary/tracer`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ instructions, imports })
+  });
+  return res.ok ? await res.json() : null;
+}
+
+export async function diffBinaryFiles(file1: File, file2: File): Promise<any> {
+  const formData = new FormData();
+  formData.append('file1', file1);
+  formData.append('file2', file2);
+  const res = await safeFetch(`${getApiBase()}/binary/diff`, {
+    method: 'POST',
+    body: formData
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.detail || `Binary diff failed`);
+  }
+  return await res.json();
+}

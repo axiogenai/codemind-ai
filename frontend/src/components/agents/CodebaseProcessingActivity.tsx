@@ -1,5 +1,4 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { useReducedMotion } from 'motion/react';
 import { AgentActivity, type AgentActivityItem } from './agent-activity';
 
 interface CodebaseProcessingActivityProps {
@@ -15,7 +14,6 @@ export const CodebaseProcessingActivity: React.FC<CodebaseProcessingActivityProp
   targetName,
   className,
 }) => {
-  const reduce = useReducedMotion() ?? false;
   const [stream, setStream] = useState('');
 
   const reasoningText = useMemo(() => {
@@ -41,32 +39,32 @@ export const CodebaseProcessingActivity: React.FC<CodebaseProcessingActivityProp
   const streamSeconds = reasoningText.length / CHARACTERS_PER_SECOND;
 
   useEffect(() => {
-    if (reduce) {
-      setStream(reasoningText);
-      return;
-    }
-
     const startedAt = performance.now();
     let frame = 0;
+    let lastUpdate = 0;
 
     const streamNextFrame = (now: number) => {
-      const cursor = Math.min(
-        reasoningText.length,
-        Math.floor(((now - startedAt) / 1000) * CHARACTERS_PER_SECOND),
-      );
-      const next = reasoningText.slice(0, cursor);
-      setStream((current) => (current === next ? current : next));
+      if (now - lastUpdate >= 28) {
+        lastUpdate = now;
+        const cursor = Math.min(
+          reasoningText.length,
+          Math.floor(((now - startedAt) / 1000) * CHARACTERS_PER_SECOND),
+        );
+        const next = reasoningText.slice(0, cursor);
+        setStream((current) => (current === next ? current : next));
 
-      if (cursor < reasoningText.length) {
-        frame = requestAnimationFrame(streamNextFrame);
+        if (cursor >= reasoningText.length) {
+          return;
+        }
       }
+      frame = requestAnimationFrame(streamNextFrame);
     };
 
     frame = requestAnimationFrame(streamNextFrame);
     return () => {
       cancelAnimationFrame(frame);
     };
-  }, [reasoningText, reduce]);
+  }, [reasoningText]);
 
   const items: AgentActivityItem[] = stream
     .split('\n')
@@ -83,8 +81,8 @@ export const CodebaseProcessingActivity: React.FC<CodebaseProcessingActivityProp
       contentType="text"
       status="working"
       duration={streamSeconds}
-      defaultOpen={reduce}
-      collapseOnComplete={!reduce}
+      defaultOpen={false}
+      collapseOnComplete={true}
       maxHeight={180}
       className={className}
     />

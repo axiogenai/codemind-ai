@@ -41,28 +41,61 @@ export const PredictiveArcCanvas: React.FC<PredictiveArcCanvasProps> = ({
     const container = containerRef.current;
     if (!canvas || !container) return;
 
-    const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const prefersReducedMotion = false; // Always run smooth hardware-accelerated animation on mobile & desktop
 
     let animationFrameId: number;
     let cleanUpFn: (() => void) | null = null;
 
     // ==============================================================
-    // VARIANT 1: signal-particles (Exact Authored ThreeUI Canvas 2D Wave Matrix)
+    // VARIANT 1: signal-particles (Ultra-Smooth Batched Canvas 2D Wave Matrix)
     // Source: https://threeui.com/backgrounds/predictive-arc/signal-particles
     // ==============================================================
     if (variant === 'signal-particles') {
-      const ctx = canvas.getContext('2d');
+      const ctx = canvas.getContext('2d', { alpha: true, desynchronized: true }) || canvas.getContext('2d');
       if (!ctx) return;
 
-      const spacing = 16;
       const dotRadius = 1.5;
+      const twoPi = Math.PI * 2;
       let time = 0;
+      let lastFrameTime = performance.now();
 
-      const rect = container.getBoundingClientRect();
-      let width = Math.max(Math.floor(rect.width || container.clientWidth || window.innerWidth || 360), 1);
-      let height = Math.max(Math.floor(rect.height || container.clientHeight || window.innerHeight || 640), 1);
+      let width = 0;
+      let height = 0;
+      let rectLeft = 0;
+      let rectTop = 0;
+      let spacing = 16;
+      let cols = 0;
+      let rows = 0;
+      let initialized = false;
+
+      // Precomputed 1D lookup tables to avoid per-dot trig in nested loop
+      let sinHi = new Float32Array(0);
+      let cosHj = new Float32Array(0);
+      let sinNx = new Float32Array(0);
+      let cosNy = new Float32Array(0);
+      let sinDiag = new Float32Array(0);
+
+      // 5 Batched color buckets to reduce 1500+ draw calls down to 5 draw calls per frame
+      const bucket0X: number[] = [];
+      const bucket0Y: number[] = [];
+      const bucket1X: number[] = [];
+      const bucket1Y: number[] = [];
+      const bucket2X: number[] = [];
+      const bucket2Y: number[] = [];
+      const bucketSlateX: number[] = [];
+      const bucketSlateY: number[] = [];
+      const bucketAmberX: number[] = [];
+      const bucketAmberY: number[] = [];
 
       const isDark = activeMode === 'dark';
+      const baseRgb = isDark ? '148, 163, 184' : '100, 116, 139';
+      const bucketStyles = [
+        `rgba(${baseRgb}, ${(0.18 * brightness).toFixed(2)})`,
+        `rgba(${baseRgb}, ${(0.36 * brightness).toFixed(2)})`,
+        `rgba(${baseRgb}, ${(0.56 * brightness).toFixed(2)})`,
+        isDark ? '#94a3b8' : '#475569',
+        isDark ? '#f59e0b' : '#d97706',
+      ];
 
       // Smooth interactive mouse and mobile touch parallax
       let mouseX = 0;
@@ -70,112 +103,176 @@ export const PredictiveArcCanvas: React.FC<PredictiveArcCanvasProps> = ({
       let targetX = 0;
       let targetY = 0;
 
-      const renderGrid = () => {
-        ctx.clearRect(0, 0, width, height);
-
-        const cols = Math.floor(width / spacing);
-        const rows = Math.floor(height / spacing);
-
-        const offsetX = (width - cols * spacing) / 2 + mouseX * 5;
-        const offsetY = (height - rows * spacing) / 2 + mouseY * 5;
+      const rebuildTables = () => {
+        cols = Math.floor(width / spacing);
+        rows = Math.floor(height / spacing);
+        sinHi = new Float32Array(cols + 1);
+        cosHj = new Float32Array(rows + 1);
+        sinNx = new Float32Array(cols + 1);
+        cosNy = new Float32Array(rows + 1);
+        sinDiag = new Float32Array(cols + rows + 2);
 
         for (let i = 0; i <= cols; i++) {
-          for (let j = 0; j <= rows; j++) {
-            const x = offsetX + i * spacing;
-            const y = offsetY + j * spacing;
-
-            const nx = i * 0.1;
-            const ny = j * 0.1;
-
-            const wave1 = Math.sin(nx + time * 0.5) * Math.cos(ny - time * 0.3);
-            const wave2 = Math.sin(nx * 0.5 - ny * 0.5 + time * 0.8);
-            const value = wave1 + wave2;
-
-            if (value > 0.1) {
-              ctx.beginPath();
-              ctx.arc(x, y, dotRadius, 0, Math.PI * 2);
-
-              const highlightCheck = Math.sin(i * 12.34) * Math.cos(j * 56.78);
-
-              if (highlightCheck > 0.98) {
-                // Amber accent highlight (rule-compliant)
-                ctx.fillStyle = isDark ? '#f59e0b' : '#d97706';
-              } else if (highlightCheck < -0.98) {
-                // Crisp slate highlight (rule-compliant)
-                ctx.fillStyle = isDark ? '#94a3b8' : '#475569';
-              } else {
-                const alpha = Math.min(0.6, (value - 0.1) * 0.8) * brightness;
-                ctx.fillStyle = isDark
-                  ? `rgba(148, 163, 184, ${alpha})`
-                  : `rgba(100, 116, 139, ${alpha})`;
-              }
-
-              ctx.fill();
-            }
-          }
+          sinHi[i] = Math.sin(i * 12.34);
+        }
+        for (let j = 0; j <= rows; j++) {
+          cosHj[j] = Math.cos(j * 56.78);
         }
       };
 
-      const handleResize = () => {
+      const drawBucket = (xs: number[], ys: number[], fillStyle: string) => {
+        const len = xs.length;
+        if (len === 0) return;
+        ctx.fillStyle = fillStyle;
+        ctx.beginPath();
+        for (let k = 0; k < len; k++) {
+          const x = xs[k];
+          const y = ys[k];
+          ctx.moveTo(x + dotRadius, y);
+          ctx.arc(x, y, dotRadius, 0, twoPi);
+        }
+        ctx.fill();
+      };
+
+      const renderGrid = () => {
+        ctx.clearRect(0, 0, width, height);
+
+        const offsetX = (width - cols * spacing) * 0.5 + mouseX * 5;
+        const offsetY = (height - rows * spacing) * 0.5 + mouseY * 5;
+
+        // Precompute 1D wave components (cols + rows trig calls instead of cols * rows)
+        const t05 = time * 0.5;
+        const t03 = time * 0.3;
+        const t08 = time * 0.8;
+
+        for (let i = 0; i <= cols; i++) {
+          sinNx[i] = Math.sin(i * 0.1 + t05);
+        }
+        for (let j = 0; j <= rows; j++) {
+          cosNy[j] = Math.cos(j * 0.1 - t03);
+        }
+        const diagOffset = rows;
+        for (let d = -rows; d <= cols; d++) {
+          sinDiag[d + diagOffset] = Math.sin(d * 0.05 + t08);
+        }
+
+        bucket0X.length = 0; bucket0Y.length = 0;
+        bucket1X.length = 0; bucket1Y.length = 0;
+        bucket2X.length = 0; bucket2Y.length = 0;
+        bucketSlateX.length = 0; bucketSlateY.length = 0;
+        bucketAmberX.length = 0; bucketAmberY.length = 0;
+
+        for (let i = 0; i <= cols; i++) {
+          const x = offsetX + i * spacing;
+          const sNx = sinNx[i];
+          const sHi = sinHi[i];
+          const dBase = i + diagOffset;
+
+          for (let j = 0; j <= rows; j++) {
+            const value = sNx * cosNy[j] + sinDiag[dBase - j];
+
+            if (value > 0.1) {
+              const y = offsetY + j * spacing;
+              const highlightCheck = sHi * cosHj[j];
+
+              if (highlightCheck > 0.98) {
+                bucketAmberX.push(x);
+                bucketAmberY.push(y);
+              } else if (highlightCheck < -0.98) {
+                bucketSlateX.push(x);
+                bucketSlateY.push(y);
+              } else if (value < 0.45) {
+                bucket0X.push(x);
+                bucket0Y.push(y);
+              } else if (value < 0.85) {
+                bucket1X.push(x);
+                bucket1Y.push(y);
+              } else {
+                bucket2X.push(x);
+                bucket2Y.push(y);
+              }
+            }
+          }
+        }
+
+        drawBucket(bucket0X, bucket0Y, bucketStyles[0]);
+        drawBucket(bucket1X, bucket1Y, bucketStyles[1]);
+        drawBucket(bucket2X, bucket2Y, bucketStyles[2]);
+        drawBucket(bucketSlateX, bucketSlateY, bucketStyles[3]);
+        drawBucket(bucketAmberX, bucketAmberY, bucketStyles[4]);
+      };
+
+      const handleResize = (force = false) => {
         if (!container || !canvas) return;
         const r = container.getBoundingClientRect();
-        width = Math.max(Math.floor(r.width || container.clientWidth || window.innerWidth || 360), 1);
-        height = Math.max(Math.floor(r.height || container.clientHeight || window.innerHeight || 640), 1);
-        const dpr = Math.min(window.devicePixelRatio || 1, 2);
+        rectLeft = r.left;
+        rectTop = r.top;
+        const newW = Math.max(Math.floor(r.width || container.clientWidth || window.innerWidth || 360), 1);
+        const newH = Math.max(Math.floor(r.height || container.clientHeight || window.innerHeight || 640), 1);
+
+        // Ignore mobile URL bar height micro-shifts during touch scroll to prevent canvas buffer wipe/lag
+        if (!force && initialized && newW === width && Math.abs(newH - height) < 90) {
+          return;
+        }
+
+        width = newW;
+        height = newH;
+        const isMobile = width < 768;
+        spacing = isMobile ? 18 : 16;
+        const dpr = Math.min(window.devicePixelRatio || 1, isMobile ? 1.5 : 2);
+
         canvas.width = Math.floor(width * dpr);
         canvas.height = Math.floor(height * dpr);
         canvas.style.width = `${width}px`;
         canvas.style.height = `${height}px`;
         ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-        if (prefersReducedMotion) {
-          renderGrid();
-        }
+
+        rebuildTables();
+        initialized = true;
+        renderGrid();
       };
 
-      handleResize();
-      const ro = new ResizeObserver(() => handleResize());
+      handleResize(true);
+      const ro = new ResizeObserver(() => handleResize(false));
       ro.observe(container);
 
-      window.addEventListener('resize', handleResize, { passive: true });
-      window.addEventListener('orientationchange', handleResize, { passive: true });
+      const onOrientationChange = () => handleResize(true);
+      window.addEventListener('resize', () => handleResize(false), { passive: true });
+      window.addEventListener('orientationchange', onOrientationChange, { passive: true });
 
       const handleMouseMove = (e: MouseEvent) => {
-        const r = container.getBoundingClientRect();
-        targetX = ((e.clientX - r.left) / (r.width || window.innerWidth || 360) - 0.5) * 2;
-        targetY = ((e.clientY - r.top) / (r.height || window.innerHeight || 640) - 0.5) * 2;
+        targetX = ((e.clientX - rectLeft) / (width || 360) - 0.5) * 2;
+        targetY = ((e.clientY - rectTop) / (height || 640) - 0.5) * 2;
       };
       window.addEventListener('mousemove', handleMouseMove, { passive: true });
 
       const handleTouchMove = (e: TouchEvent) => {
         if (!e.touches || e.touches.length === 0) return;
         const touch = e.touches[0];
-        const r = container.getBoundingClientRect();
-        targetX = ((touch.clientX - r.left) / (r.width || window.innerWidth || 360) - 0.5) * 2;
-        targetY = ((touch.clientY - r.top) / (r.height || window.innerHeight || 640) - 0.5) * 2;
+        targetX = ((touch.clientX - rectLeft) / (width || 360) - 0.5) * 2;
+        targetY = ((touch.clientY - rectTop) / (height || 640) - 0.5) * 2;
       };
       window.addEventListener('touchmove', handleTouchMove, { passive: true });
 
-      if (prefersReducedMotion) {
+      const draw = (now: number) => {
+        animationFrameId = requestAnimationFrame(draw);
+
+        const dt = Math.min((now - lastFrameTime) * 0.001, 0.05);
+        lastFrameTime = now;
+
+        mouseX += (targetX - mouseX) * 0.08;
+        mouseY += (targetY - mouseY) * 0.08;
+
         renderGrid();
-      } else {
-        const draw = () => {
-          animationFrameId = requestAnimationFrame(draw);
 
-          mouseX += (targetX - mouseX) * 0.05;
-          mouseY += (targetY - mouseY) * 0.05;
+        time += dt * 1.2 * speed;
+      };
 
-          renderGrid();
-
-          time += 0.02 * speed;
-        };
-
-        draw();
-      }
+      animationFrameId = requestAnimationFrame(draw);
 
       cleanUpFn = () => {
         ro.disconnect();
-        window.removeEventListener('resize', handleResize);
-        window.removeEventListener('orientationchange', handleResize);
+        window.removeEventListener('orientationchange', onOrientationChange);
         window.removeEventListener('mousemove', handleMouseMove);
         window.removeEventListener('touchmove', handleTouchMove);
         if (animationFrameId) cancelAnimationFrame(animationFrameId);

@@ -36,7 +36,7 @@ export const BentoCard: React.FC<BentoCardProps> = ({
         shouldBeVisible ? 'overflow-visible' : 'overflow-hidden'
       } rounded-2xl sm:rounded-3xl border border-zinc-200 dark:border-white/[0.08] bg-white dark:bg-[#0D0E11] p-4.5 sm:p-5 shadow-xs hover:border-zinc-300 dark:hover:border-white/[0.16] transition-colors duration-200 ${colSpan} ${rowSpan} ${className}`}
     >
-      <div className={`relative z-10 h-full flex flex-col ${shouldBeVisible ? 'overflow-visible' : ''}`}>{children}</div>
+      <div className={`z-10 h-full flex flex-col ${shouldBeVisible ? 'overflow-visible' : ''}`}>{children}</div>
     </div>
   );
 };

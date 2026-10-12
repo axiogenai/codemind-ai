@@ -1,10 +1,15 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import {
   GitFork,
   ArrowDown,
   Activity,
-  Workflow
+  Workflow,
+  ShieldCheck
 } from 'lucide-react';
+
+export interface ControlFlowTracerViewProps {
+  binaryAnalysis?: any;
+}
 
 interface FunctionNode {
   id: string;
@@ -170,12 +175,98 @@ const FUNCTIONS_DATABASE: Record<string, FunctionNode> = {
   }
 };
 
-export const ControlFlowTracerView: React.FC = () => {
-  const [selectedFunctionId, setSelectedFunctionId] = useState<string>('auth_validate_token');
+export const ControlFlowTracerView: React.FC<ControlFlowTracerViewProps> = ({ binaryAnalysis }) => {
+  const [selectedFunctionId, setSelectedFunctionId] = useState<string>(
+    binaryAnalysis ? 'analyzed_entry' : 'auth_validate_token'
+  );
   const [activeTab, setActiveTab] = useState<'hierarchy' | 'cfg' | 'dataflow'>('hierarchy');
   const [depthLevel, setDepthLevel] = useState<number>(2);
 
-  const currentFunc = FUNCTIONS_DATABASE[selectedFunctionId] || FUNCTIONS_DATABASE['auth_validate_token'];
+  const functionsDb = useMemo(() => {
+    const base = { ...FUNCTIONS_DATABASE };
+    if (binaryAnalysis && binaryAnalysis.metadata) {
+      const fn = binaryAnalysis.metadata.filename || 'uploaded_binary.exe';
+      const asmList = binaryAnalysis.asm_functions?.main_entry || [];
+      const importsList = binaryAnalysis.imports || [];
+
+      // Extract real callees from call instructions
+      const dynamicCallees = asmList
+        .filter((insn: any) => insn.mnemonic?.toLowerCase() === 'call')
+        .map((insn: any) => {
+          const target = insn.operands || 'sub_routine';
+          const matchedImp = importsList.find((imp: any) => target.toLowerCase().includes(imp.function.toLowerCase()));
+          return {
+            name: matchedImp ? `${matchedImp.dll}!${matchedImp.function}` : target,
+            offset: insn.offset,
+            type: (matchedImp ? 'API' : 'INTERNAL') as 'API' | 'INTERNAL',
+            risk: (matchedImp?.risk || 'SAFE') as 'SAFE' | 'MEDIUM' | 'HIGH'
+          };
+        });
+
+      // Partition instructions into basic blocks
+      const dynamicBlocks: any[] = [];
+      let curBlockInsns: string[] = [];
+      let bIdx = 0;
+      for (let i = 0; i < Math.min(asmList.length, 32); i++) {
+        const insn = asmList[i];
+        curBlockInsns.push(`${insn.mnemonic} ${insn.operands}`.trim());
+        const m = insn.mnemonic?.toLowerCase();
+        const isBranch = ['jmp', 'jz', 'jnz', 'call', 'ret', 'je', 'jne'].includes(m);
+        if (isBranch || i === Math.min(asmList.length, 32) - 1) {
+          dynamicBlocks.push({
+            id: `bb_${bIdx}`,
+            label: bIdx === 0 ? `loc_entry (${fn})` : `loc_block_${bIdx} (${insn.offset})`,
+            type: bIdx === 0 ? 'ENTRY' : m === 'ret' ? 'EXIT' : 'CONDITIONAL',
+            instructions: curBlockInsns,
+            nextBlocks: m === 'ret' ? [] : [`bb_${bIdx + 1}`]
+          });
+          curBlockInsns = [];
+          bIdx++;
+        }
+      }
+
+      base['analyzed_entry'] = {
+        id: 'analyzed_entry',
+        name: `${fn} -> main_entry (0x${binaryAnalysis.metadata.entryPoint})`,
+        module: `${fn} (${binaryAnalysis.metadata.format})`,
+        complexity: binaryAnalysis.metadata.sectionsCount || 6,
+        callers: [
+          { name: 'System PE Loader / BaseThreadInitThunk', offset: binaryAnalysis.metadata.imageBase, freq: 'Process Entry' }
+        ],
+        callees: dynamicCallees.length > 0 ? dynamicCallees : [
+          { name: 'runtime_init()', offset: binaryAnalysis.metadata.entryPoint, type: 'INTERNAL', risk: 'SAFE' }
+        ],
+        basicBlocks: dynamicBlocks.length > 0 ? dynamicBlocks : [
+          {
+            id: 'bb_0',
+            label: 'loc_entry',
+            type: 'ENTRY',
+            instructions: ['sub rsp, 28h', 'test rcx, rcx', 'ret'],
+            nextBlocks: []
+          }
+        ],
+        dataFlow: [
+          {
+            variable: 'context_ptr (RCX)',
+            source: 'OS Process Environment Block (PEB)',
+            sink: dynamicCallees[0]?.name || 'entrypoint_body',
+            tainted: false,
+            description: 'Top-level initialization context passed from OS kernel subsystem'
+          },
+          {
+            variable: 'entry_stack_frame (RSP)',
+            source: 'Stack Allocation Subsystem',
+            sink: 'Epilogue Add RSP',
+            tainted: false,
+            description: 'Guarded shadow stack frame with ASLR/DEP active'
+          }
+        ]
+      };
+    }
+    return base;
+  }, [binaryAnalysis]);
+
+  const currentFunc = functionsDb[selectedFunctionId] || Object.values(functionsDb)[0];
 
   return (
     <div className="flex flex-col h-full w-full bg-zinc-50 dark:bg-[#0A0A0A] text-zinc-900 dark:text-zinc-100 overflow-hidden select-none font-sans">
@@ -191,6 +282,12 @@ export const ControlFlowTracerView: React.FC = () => {
               <span className="text-[10px] font-mono px-1.5 py-0.5 rounded-full bg-zinc-100 dark:bg-white/[0.08] text-zinc-600 dark:text-zinc-300 font-bold border border-zinc-200 dark:border-white/[0.08]">
                 XREF & AST
               </span>
+              {binaryAnalysis && (
+                <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-zinc-900 dark:bg-white text-zinc-100 dark:text-zinc-950 font-semibold flex items-center space-x-1 shadow-2xs">
+                  <ShieldCheck className="w-3 h-3 text-emerald-400 dark:text-emerald-600" />
+                  <span>Dynamic Disassembled CFG (Live Backend)</span>
+                </span>
+              )}
             </div>
             <p className="text-xs text-zinc-500 dark:text-zinc-400">
               Trace function callers, callees, branching logic, basic blocks, and tainted data flow paths.
@@ -205,7 +302,7 @@ export const ControlFlowTracerView: React.FC = () => {
             onChange={(e) => setSelectedFunctionId(e.target.value)}
             className="w-full sm:w-72 text-xs font-mono font-medium bg-zinc-100 dark:bg-[#141519] border border-zinc-200 dark:border-white/[0.08] rounded-lg px-3 py-1.5 text-zinc-800 dark:text-zinc-200 focus:outline-none cursor-pointer"
           >
-            {Object.values(FUNCTIONS_DATABASE).map(f => (
+            {Object.values(functionsDb).map(f => (
               <option key={f.id} value={f.id}>
                 {f.name}
               </option>

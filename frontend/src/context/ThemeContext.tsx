@@ -72,9 +72,8 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     };
 
     const doc = document as TransitionDocument;
-    const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-    if (!doc.startViewTransition || reduced) {
+    if (!doc.startViewTransition) {
       commit();
       return;
     }
@@ -82,7 +81,8 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     locked.current = true;
     document.documentElement.setAttribute('data-theme-transition', nextTheme);
 
-    const animationDuration = 780;
+    const isMobile = window.innerWidth < 768;
+    const animationDuration = isMobile ? 480 : 680;
     const radius = Math.hypot(window.innerWidth / 2, window.innerHeight / 2);
     const zero = 'circle(0px at 50% 50%)';
     const full = `circle(${radius}px at 50% 50%)`;

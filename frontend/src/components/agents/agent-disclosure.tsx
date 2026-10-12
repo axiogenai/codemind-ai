@@ -1,4 +1,4 @@
-import { motion, type HTMLMotionProps, useReducedMotion } from "motion/react";
+import { motion, type HTMLMotionProps } from "motion/react";
 import type { CSSProperties } from "react";
 import { EASE_OUT } from "@/lib/ease";
 import { cn } from "@/lib/utils";
@@ -18,26 +18,20 @@ export function AgentDisclosure({
   transition,
   ...props
 }: AgentDisclosureProps) {
-  const reduce = useReducedMotion() ?? false;
-
   return (
     <motion.div
       {...props}
       aria-hidden={!open}
       inert={!open ? true : undefined}
       initial={false}
-      animate={
-        reduce
-          ? { opacity: open ? 1 : 0 }
-          : {
-              opacity: open ? 1 : 0,
-              clipPath: open ? "inset(0 0 0% 0)" : "inset(0 0 100% 0)",
-              y: open ? 0 : -4,
-            }
-      }
+      animate={{
+        opacity: open ? 1 : 0,
+        clipPath: open ? "inset(0 0 0% 0)" : "inset(0 0 100% 0)",
+        y: open ? 0 : -4,
+      }}
       transition={
         transition ?? {
-          duration: reduce ? 0 : open ? 0.22 : 0.14,
+          duration: open ? 0.22 : 0.14,
           ease: EASE_OUT,
         }
       }

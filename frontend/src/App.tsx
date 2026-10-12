@@ -56,6 +56,7 @@ export function App() {
   const [localDirInput, setLocalDirInput] = useState('');
   const [selectedZipFile, setSelectedZipFile] = useState<File | null>(null);
   const [selectedBinaryFile, setSelectedBinaryFile] = useState<File | null>(null);
+  const [activeBinaryAnalysis, setActiveBinaryAnalysis] = useState<any>(null);
   const [websiteUrlInput, setWebsiteUrlInput] = useState('');
   const [isImporting, setIsImporting] = useState(false);
   const [importError, setImportError] = useState('');
@@ -284,7 +285,7 @@ export function App() {
                 </div>
 
                 {/* Importer Card Container - Spotlight Card */}
-                <SpotlightCard className="p-4 sm:p-6 rounded-2xl border border-zinc-200/80 dark:border-white/[0.08] bg-white/70 dark:bg-[#111215]/80 backdrop-blur-xl shadow-xs space-y-4">
+                <SpotlightCard className="p-4 sm:p-6 rounded-2xl border border-zinc-200/80 dark:border-white/[0.08] bg-white/85 dark:bg-[#111215]/90 backdrop-blur-md sm:backdrop-blur-xl shadow-xs space-y-4">
                   {/* Tab Selector */}
                   <div className="grid grid-cols-2 sm:grid-cols-4 p-1 rounded-xl bg-zinc-100/90 dark:bg-zinc-900/90 border border-zinc-200/80 dark:border-white/[0.06] gap-1 mb-4 sm:mb-4.5">
                     <button
@@ -654,11 +655,14 @@ export function App() {
 
               {/* Binary Lab & Reverse Engineering Views */}
               {activeTab === 'binary-lab' && (
-                <BinaryLabView />
+                <BinaryLabView
+                  initialFile={selectedBinaryFile}
+                  onAnalysisUpdated={(analysis) => setActiveBinaryAnalysis(analysis)}
+                />
               )}
 
               {activeTab === 'call-tracer' && (
-                <ControlFlowTracerView />
+                <ControlFlowTracerView binaryAnalysis={activeBinaryAnalysis} />
               )}
 
               {activeTab === 'binary-diff' && (
@@ -674,7 +678,7 @@ export function App() {
               )}
 
               {activeTab === 'investigation-reports' && (
-                <InvestigationReportsView />
+                <InvestigationReportsView binaryAnalysis={activeBinaryAnalysis} />
               )}
             </>
           )}
