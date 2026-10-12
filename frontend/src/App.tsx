@@ -242,9 +242,7 @@ export function App() {
               <div className="max-w-xl w-full my-auto space-y-5 sm:space-y-7 animate-in fade-in duration-200 relative z-10 py-3 sm:py-6">
                 {/* Hero Title */}
                 <div className="text-center space-y-2.5 sm:space-y-3 flex flex-col items-center">
-                  <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-2xl bg-white dark:bg-[#141518] border border-zinc-200/80 dark:border-white/[0.08] p-2 sm:p-2.5 flex items-center justify-center shadow-xs">
-                    <CodeMindLogo className="w-full h-full" />
-                  </div>
+                  <CodeMindLogo className="w-14 h-14 sm:w-16 sm:h-16" />
                   <div className="inline-flex items-center justify-center gap-2.5 sm:gap-3.5 select-none py-1">
                     <span className="w-6 sm:w-12 h-[1px] bg-zinc-300 dark:bg-zinc-800" />
                     <span className="text-[10px] sm:text-xs font-mono font-medium tracking-[0.2em] uppercase text-zinc-600 dark:text-zinc-400">

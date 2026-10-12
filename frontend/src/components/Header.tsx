@@ -36,9 +36,7 @@ export const Header: React.FC<HeaderProps> = ({
         )}
 
         <div className="flex items-center space-x-2.5 cursor-pointer select-none">
-          <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg border border-zinc-200 dark:border-white/[0.08] bg-zinc-100 dark:bg-[#141518] p-1 flex items-center justify-center shrink-0 shadow-xs">
-            <CodeMindLogo className="w-full h-full" />
-          </div>
+          <CodeMindLogo className="w-8 h-8 sm:w-9 sm:h-9" />
           <div className="flex flex-col justify-center">
             <h1 className="text-sm font-semibold text-zinc-900 dark:text-white tracking-tight leading-tight">
               CodeMind AI

@@ -8,7 +8,7 @@ interface CodeMindLogoProps {
 }
 
 export const CodeMindLogo: React.FC<CodeMindLogoProps> = ({
-  className = 'w-full h-full',
+  className = 'w-8 h-8',
   size,
   alt = 'CodeMind AI Logo',
 }) => {
