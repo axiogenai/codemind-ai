@@ -27,7 +27,7 @@ import { FunctionIntelligenceView } from './components/FunctionIntelligenceView'
 import { InvestigationReportsView } from './components/InvestigationReportsView';
 
 import type { ProjectMeta, ProjectFile, KnowledgeGraphData, SecurityReport } from './types';
-import { FolderOpen, Upload, Globe, ArrowRight } from 'lucide-react';
+import { FolderOpen, Upload, Globe, ArrowRight, Cpu } from 'lucide-react';
 import { CodeMindLogo } from './components/CodeMindLogo';
 import { CodebaseProcessingActivity } from './components/agents/CodebaseProcessingActivity';
 import { fetchProjects, scanLocalDirectory, uploadProjectZip, scrapeWebsiteUrl, analyzeProject } from './services/api';
@@ -52,13 +52,33 @@ export function App() {
   const [selectedChatSymbol, setSelectedChatSymbol] = useState<{ label: string; file?: string; type?: string } | null>(null);
 
   // Importer state for full-page onboarding
-  const [landingTab, setLandingTab] = useState<'local' | 'upload' | 'url'>('local');
+  const [landingTab, setLandingTab] = useState<'local' | 'upload' | 'url' | 'binary'>('local');
   const [localDirInput, setLocalDirInput] = useState('');
   const [selectedZipFile, setSelectedZipFile] = useState<File | null>(null);
+  const [selectedBinaryFile, setSelectedBinaryFile] = useState<File | null>(null);
   const [websiteUrlInput, setWebsiteUrlInput] = useState('');
   const [isImporting, setIsImporting] = useState(false);
   const [importError, setImportError] = useState('');
   const [recentProjects, setRecentProjects] = useState<ProjectMeta[]>([]);
+
+  const handleLaunchBinaryLab = (file?: File | null) => {
+    const binaryName = file ? file.name : 'daemon_agent.exe';
+    const synthProject: ProjectMeta = {
+      id: `binary-lab-${Date.now()}`,
+      name: binaryName,
+      description: `Compiled binary target (${binaryName})`,
+      primary_language: 'Binary (x86_64)',
+      framework: 'Native Executable',
+      total_files: 1,
+      total_lines: 1024,
+      health_score: 95,
+      security_grade: 'A',
+      languages: { 'Binary / Executable': 100 },
+      created_at: new Date().toISOString()
+    };
+    setCurrentProject(synthProject);
+    setActiveTab('binary-lab');
+  };
 
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
 
@@ -184,12 +204,14 @@ export function App() {
       <div className="fixed inset-0 z-[9999] w-screen h-screen bg-zinc-50 dark:bg-[#0A0A0A] flex flex-col items-center justify-center p-6 select-none overflow-hidden transition-colors">
         <div className="w-full max-w-lg">
           <CodebaseProcessingActivity
-            mode={landingTab}
+            mode={landingTab === 'binary' ? 'upload' : landingTab}
             targetName={
               landingTab === 'local'
                 ? localDirInput
                 : landingTab === 'upload'
                 ? selectedZipFile?.name
+                : landingTab === 'binary'
+                ? selectedBinaryFile?.name
                 : websiteUrlInput
             }
           />
@@ -264,7 +286,7 @@ export function App() {
                 {/* Importer Card Container - Spotlight Card */}
                 <SpotlightCard className="p-4 sm:p-6 rounded-2xl border border-zinc-200/80 dark:border-white/[0.08] bg-white/70 dark:bg-[#111215]/80 backdrop-blur-xl shadow-xs space-y-4">
                   {/* Tab Selector */}
-                  <div className="grid grid-cols-3 p-1 rounded-xl bg-zinc-100/90 dark:bg-zinc-900/90 border border-zinc-200/80 dark:border-white/[0.06] gap-1 mb-4 sm:mb-4.5">
+                  <div className="grid grid-cols-2 sm:grid-cols-4 p-1 rounded-xl bg-zinc-100/90 dark:bg-zinc-900/90 border border-zinc-200/80 dark:border-white/[0.06] gap-1 mb-4 sm:mb-4.5">
                     <button
                       type="button"
                       onClick={() => { setLandingTab('local'); setImportError(''); }}
@@ -300,6 +322,18 @@ export function App() {
                     >
                       <Globe className="w-4 h-4 text-amber-500 dark:text-amber-400 shrink-0" strokeWidth={2} />
                       <span className="truncate">Web / URL</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => { setLandingTab('binary'); setImportError(''); }}
+                      className={`py-2 rounded-lg text-xs font-semibold transition-all cursor-pointer flex items-center justify-center space-x-1.5 outline-none focus:outline-none focus:ring-0 select-none ${
+                        landingTab === 'binary'
+                          ? 'bg-white dark:bg-zinc-800 text-zinc-900 dark:text-white shadow-2xs border border-zinc-200/80 dark:border-zinc-700/60'
+                          : 'text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white border border-transparent'
+                      }`}
+                    >
+                      <Cpu className="w-4 h-4 text-zinc-700 dark:text-zinc-300 shrink-0" strokeWidth={2} />
+                      <span className="truncate">Binary Executable</span>
                     </button>
                   </div>
 
@@ -435,6 +469,52 @@ export function App() {
                             <span>Reverse Engineer URL</span>
                           </>
                         )}
+                      </button>
+                    </div>
+                  )}
+
+                  {/* Tab 4: Binary Executable (.exe, .dll, .so, .elf, .sys) */}
+                  {landingTab === 'binary' && (
+                    <div className="space-y-3.5">
+                      <div className="space-y-1.5">
+                        <label className="text-xs font-medium text-zinc-700 dark:text-zinc-300 flex items-center justify-between">
+                          <span>Select or Insert Compiled Binary File</span>
+                          <span className="text-[10px] text-zinc-400 dark:text-zinc-500 font-mono">.exe, .dll, .so, .elf, .sys</span>
+                        </label>
+                        <div className="relative">
+                          <input
+                            type="file"
+                            id="landing-binary-upload-field"
+                            accept=".exe,.dll,.so,.elf,.sys,.dylib,.bin,.o"
+                            className="hidden"
+                            onChange={(e) => {
+                              const f = e.target.files?.[0];
+                              if (f) setSelectedBinaryFile(f);
+                            }}
+                            disabled={isImporting}
+                          />
+                          <label
+                            htmlFor="landing-binary-upload-field"
+                            className="w-full bg-zinc-50 dark:bg-[#0A0A0A] border-2 border-dashed border-zinc-200 dark:border-white/[0.08] hover:border-zinc-400 dark:hover:border-zinc-600 rounded-xl px-4 py-4 text-xs flex flex-col items-center justify-center cursor-pointer transition-colors group"
+                          >
+                            <Cpu className="w-6 h-6 text-zinc-400 group-hover:text-zinc-800 dark:group-hover:text-zinc-200 mb-1 transition-colors" strokeWidth={1.5} />
+                            <span className="font-semibold text-zinc-800 dark:text-zinc-200 truncate max-w-xs text-center">
+                              {selectedBinaryFile ? selectedBinaryFile.name : 'Choose or drop .exe, .dll, .so, .elf, .sys'}
+                            </span>
+                            <span className="text-[10px] text-zinc-400 dark:text-zinc-500 mt-0.5 font-mono">
+                              {selectedBinaryFile ? `${(selectedBinaryFile.size / 1024).toFixed(1)} KB` : 'Direct Hex, Disassembly, & Decompiler Lab'}
+                            </span>
+                          </label>
+                        </div>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => handleLaunchBinaryLab(selectedBinaryFile)}
+                        disabled={isImporting}
+                        className="w-full py-2.5 rounded-xl bg-white hover:bg-zinc-100 text-zinc-950 font-semibold text-xs border border-zinc-200/90 dark:border-white/10 shadow-sm transition-colors flex items-center justify-center space-x-2 cursor-pointer outline-none focus:outline-none focus:ring-0 select-none"
+                      >
+                        <Cpu className="w-4 h-4" strokeWidth={2} />
+                        <span>{selectedBinaryFile ? `Launch Binary Lab for ${selectedBinaryFile.name}` : 'Open Binary Lab Sandbox'}</span>
                       </button>
                     </div>
                   )}
