@@ -1,0 +1,260 @@
+import React, { useState } from 'react';
+import {
+  FileSpreadsheet,
+  Copy,
+  Check,
+  Printer
+} from 'lucide-react';
+
+interface Finding {
+  id: string;
+  severity: 'CRITICAL' | 'HIGH' | 'MEDIUM' | 'LOW';
+  cwe: string;
+  title: string;
+  affectedSymbol: string;
+  description: string;
+  remediation: string;
+}
+
+const SAMPLE_FINDINGS: Finding[] = [
+  {
+    id: 'F-01',
+    severity: 'HIGH',
+    cwe: 'CWE-327',
+    title: 'Missing Nonce Uniqueness Guarantee in AES-GCM Initialization',
+    affectedSymbol: 'crypto_initialize_aes_gcm()',
+    description: 'The Galois/Counter Mode (GCM) cipher suite requires unique nonces for each encryption run. The current routine omits an entropy check or monotonic counter verification on the initialization vector.',
+    remediation: 'Implement a CSPRNG-backed nonce generator with collision protection or transition to AES-GCM-SIV (Synthetic IV).'
+  },
+  {
+    id: 'F-02',
+    severity: 'MEDIUM',
+    cwe: 'CWE-732',
+    title: 'Insecure Permissions on Exclusive Runtime Mutex Lock',
+    affectedSymbol: 'main_entry()',
+    description: 'File lock created at C:\\ProgramData\\CodeMind\\runtime.lock defaults to inherited discretionary access control lists (DACL), allowing lower-privileged processes to query lock handles.',
+    remediation: 'Explicitly define an explicit SECURITY_ATTRIBUTES descriptor restricting access to SYSTEM and Built-in Administrators.'
+  },
+  {
+    id: 'F-03',
+    severity: 'LOW',
+    cwe: 'CWE-200',
+    title: 'Debug String Leakage in Disassembled Binary Sections',
+    affectedSymbol: '.rdata symbol pool',
+    description: 'Internal source file paths and development build parameters remain present in read-only data sections, revealing internal build directory structures.',
+    remediation: 'Strip debug symbols and enable compiler string pooling (/Gy and /DEBUG:NONE in release builds).'
+  }
+];
+
+export const InvestigationReportsView: React.FC = () => {
+  const [reportType, setReportType] = useState<string>('technical_dossier');
+  const [copied, setCopied] = useState(false);
+
+  const handleCopyReport = () => {
+    setCopied(true);
+    navigator.clipboard.writeText(`CODEMIND AI - BINARY INVESTIGATION REPORT
+Target: daemon_agent.exe
+SHA256: 9f83b2a1c0de7419a4e320bf05b631d8e41f9273528bca01e4599a8019b88ef7
+Format: PE32+ (x86_64)
+Status: Completed Audit`);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  return (
+    <div className="flex flex-col h-full w-full bg-zinc-50 dark:bg-[#0A0A0A] text-zinc-900 dark:text-zinc-100 overflow-hidden select-none font-sans">
+      {/* Header Bar */}
+      <div className="shrink-0 border-b border-zinc-200 dark:border-white/[0.08] bg-white dark:bg-[#0D0E11] px-5 py-3.5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+        <div className="flex items-center space-x-3">
+          <div className="w-9 h-9 rounded-xl bg-zinc-900 dark:bg-white/[0.08] flex items-center justify-center border border-zinc-300 dark:border-white/[0.12] text-white">
+            <FileSpreadsheet className="w-5 h-5" />
+          </div>
+          <div>
+            <div className="flex items-center space-x-2">
+              <h1 className="text-base font-bold tracking-tight">Investigation Reports</h1>
+              <span className="text-[10px] font-mono px-1.5 py-0.5 rounded-full bg-zinc-100 dark:bg-white/[0.08] text-zinc-600 dark:text-zinc-300 font-bold border border-zinc-200 dark:border-white/[0.08]">
+                AUDIT DOSSIER
+              </span>
+            </div>
+            <p className="text-xs text-zinc-500 dark:text-zinc-400">
+              Generate comprehensive technical reports containing architecture, findings, function maps, and recommendations.
+            </p>
+          </div>
+        </div>
+
+        {/* Action Buttons */}
+        <div className="flex items-center space-x-2">
+          <button
+            onClick={handleCopyReport}
+            className="flex items-center space-x-1.5 px-3 py-1.5 rounded-lg text-xs font-mono font-medium border border-zinc-200 dark:border-white/[0.08] bg-white dark:bg-[#141519] hover:bg-zinc-100 dark:hover:bg-white/[0.04] transition-colors cursor-pointer"
+          >
+            {copied ? <Check className="w-3.5 h-3.5 text-zinc-600 dark:text-zinc-300" /> : <Copy className="w-3.5 h-3.5 text-zinc-500" />}
+            <span>{copied ? 'Copied' : 'Copy Report'}</span>
+          </button>
+          <button
+            onClick={() => window.print()}
+            className="flex items-center space-x-1.5 px-3 py-1.5 rounded-lg text-xs font-mono font-medium border border-zinc-200 dark:border-white/[0.08] bg-white dark:bg-[#141519] hover:bg-zinc-100 dark:hover:bg-white/[0.04] transition-colors cursor-pointer"
+          >
+            <Printer className="w-3.5 h-3.5 text-zinc-500" />
+            <span>Print / PDF</span>
+          </button>
+        </div>
+      </div>
+
+      {/* Target Binary Overview Ribbon */}
+      <div className="shrink-0 bg-zinc-100/60 dark:bg-[#121317] border-b border-zinc-200 dark:border-white/[0.08] px-5 py-2 flex flex-wrap items-center gap-x-6 gap-y-1 text-xs font-mono">
+        <div className="flex items-center space-x-1.5">
+          <span className="text-zinc-400">SUBJECT:</span>
+          <span className="font-bold text-zinc-900 dark:text-white">daemon_agent.exe</span>
+        </div>
+        <div className="flex items-center space-x-1.5">
+          <span className="text-zinc-400">REPORT TEMPLATE:</span>
+          <select
+            value={reportType}
+            onChange={(e) => setReportType(e.target.value)}
+            className="bg-transparent border-0 text-zinc-800 dark:text-zinc-200 font-semibold focus:outline-none cursor-pointer"
+          >
+            <option value="technical_dossier" className="bg-white dark:bg-zinc-900">Reverse Engineering Technical Dossier</option>
+            <option value="threat_assessment" className="bg-white dark:bg-zinc-900">Binary Threat & Malware Assessment</option>
+            <option value="regression_audit" className="bg-white dark:bg-zinc-900">Architecture & Version Regression Audit</option>
+          </select>
+        </div>
+        <div className="flex items-center space-x-1.5">
+          <span className="text-zinc-400">FINDINGS:</span>
+          <span className="font-bold text-zinc-800 dark:text-zinc-200">{SAMPLE_FINDINGS.length} Issues Documented</span>
+        </div>
+      </div>
+
+      {/* Report Document Body */}
+      <div className="flex-1 overflow-auto p-4 md:p-6 custom-scrollbar">
+        <div className="max-w-4xl mx-auto bg-white dark:bg-[#0E0F13] border border-zinc-200 dark:border-white/[0.08] rounded-xl p-6 sm:p-8 shadow-xs space-y-6">
+          {/* Document Header */}
+          <div className="border-b border-zinc-200 dark:border-white/[0.08] pb-5">
+            <div className="flex justify-between items-start">
+              <div>
+                <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-zinc-400 block mb-1">
+                  OFFICIAL INVESTIGATION REPORT
+                </span>
+                <h2 className="text-xl font-bold tracking-tight text-zinc-900 dark:text-white">
+                  Binary Reverse Engineering & Security Audit Dossier
+                </h2>
+                <p className="text-xs text-zinc-500 mt-1">
+                  Generated by CodeMind AI Reverse Engineering Engine v1.0
+                </p>
+              </div>
+              <div className="text-right text-xs font-mono text-zinc-400">
+                <p>STATUS: <span className="font-bold text-zinc-800 dark:text-zinc-200">VERIFIED</span></p>
+                <p>DATE: 2026-10-11</p>
+              </div>
+            </div>
+          </div>
+
+          {/* Section 1: Executive Summary */}
+          <section className="space-y-2">
+            <h3 className="text-xs font-mono font-bold uppercase tracking-wider text-zinc-400 flex items-center space-x-1.5">
+              <span>01. Executive Summary & Architecture Overview</span>
+            </h3>
+            <p className="text-xs text-zinc-700 dark:text-zinc-300 leading-relaxed">
+              Static and symbolic dynamic reverse engineering was conducted on the compiled x86_64 PE32+ executable <code className="font-mono text-zinc-900 dark:text-white bg-zinc-100 dark:bg-white/[0.06] px-1 py-0.5 rounded">daemon_agent.exe</code>.
+              The application serves as a background telemetry and cryptographic validation daemon. Analysis reveals complete implementation of AES-256 GCM encryption via the Windows CNG API subsystem, accompanied by RPC socket communication over TCP port 8443.
+            </p>
+          </section>
+
+          {/* Section 2: Cryptographic Identifiers */}
+          <section className="space-y-3 pt-2">
+            <h3 className="text-xs font-mono font-bold uppercase tracking-wider text-zinc-400">
+              02. Binary Specifications & Cryptographic Hashes
+            </h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-xs font-mono">
+              <div className="p-2.5 rounded-lg bg-zinc-50 dark:bg-[#141519] border border-zinc-200 dark:border-white/[0.06]">
+                <span className="text-[10px] text-zinc-400 block font-semibold">SHA-256</span>
+                <span className="text-zinc-800 dark:text-zinc-200 break-all">9f83b2a1c0de7419a4e320bf05b631d8e41f9273528bca01e4599a8019b88ef7</span>
+              </div>
+              <div className="p-2.5 rounded-lg bg-zinc-50 dark:bg-[#141519] border border-zinc-200 dark:border-white/[0.06]">
+                <span className="text-[10px] text-zinc-400 block font-semibold">MD5</span>
+                <span className="text-zinc-800 dark:text-zinc-200">5d41402abc4b2a76b9719d911017c592</span>
+              </div>
+              <div className="p-2.5 rounded-lg bg-zinc-50 dark:bg-[#141519] border border-zinc-200 dark:border-white/[0.06]">
+                <span className="text-[10px] text-zinc-400 block font-semibold">IMPHASH (Import Hash)</span>
+                <span className="text-zinc-800 dark:text-zinc-200">a3f81e6490c0b31d4e28bf612985ca07</span>
+              </div>
+              <div className="p-2.5 rounded-lg bg-zinc-50 dark:bg-[#141519] border border-zinc-200 dark:border-white/[0.06]">
+                <span className="text-[10px] text-zinc-400 block font-semibold">SSDEEP Fuzzy Hash</span>
+                <span className="text-zinc-800 dark:text-zinc-200">6144:9vJ3+kL8e1w4...:9kL8e1</span>
+              </div>
+            </div>
+          </section>
+
+          {/* Section 3: Findings Matrix */}
+          <section className="space-y-3 pt-2">
+            <h3 className="text-xs font-mono font-bold uppercase tracking-wider text-zinc-400">
+              03. Security & Behavioral Observations Matrix
+            </h3>
+            <div className="space-y-2.5">
+              {SAMPLE_FINDINGS.map((finding) => (
+                <div
+                  key={finding.id}
+                  className="p-3.5 rounded-lg bg-zinc-50 dark:bg-[#141519] border border-zinc-200 dark:border-white/[0.06] text-xs font-mono space-y-1.5"
+                >
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-2">
+                      <span className="font-bold text-zinc-900 dark:text-white">{finding.id}: {finding.title}</span>
+                      <span className="text-[10px] text-zinc-400">({finding.cwe})</span>
+                    </div>
+                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded border ${
+                      finding.severity === 'HIGH'
+                        ? 'bg-zinc-200 dark:bg-white/[0.12] text-zinc-900 dark:text-zinc-100 border-zinc-300 dark:border-white/[0.16]'
+                        : 'bg-zinc-100 dark:bg-white/[0.06] text-zinc-700 dark:text-zinc-300 border-zinc-200 dark:border-white/[0.08]'
+                    }`}>
+                      {finding.severity}
+                    </span>
+                  </div>
+                  <p className="text-zinc-600 dark:text-zinc-400 font-sans text-xs">
+                    {finding.description}
+                  </p>
+                  <div className="pt-1.5 text-[11px] text-zinc-500 font-sans">
+                    <strong className="text-zinc-700 dark:text-zinc-300">Remediation:</strong> {finding.remediation}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </section>
+
+          {/* Section 4: Indicators of Compromise (IOCs) */}
+          <section className="space-y-3 pt-2">
+            <h3 className="text-xs font-mono font-bold uppercase tracking-wider text-zinc-400">
+              04. Forensic Artifacts & Indicators of Compromise (IOCs)
+            </h3>
+            <div className="overflow-x-auto border border-zinc-200 dark:border-white/[0.06] rounded-lg">
+              <table className="w-full text-left text-xs font-mono">
+                <thead className="bg-zinc-100/70 dark:bg-[#15161C] border-b border-zinc-200 dark:border-white/[0.08] text-zinc-500 uppercase text-[10px]">
+                  <tr>
+                    <th className="py-2 px-3">Type</th>
+                    <th className="py-2 px-3">Indicator / Value</th>
+                    <th className="py-2 px-3">Context</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-zinc-200 dark:divide-white/[0.04]">
+                  <tr>
+                    <td className="py-2 px-3 text-zinc-500">IPv4 Socket</td>
+                    <td className="py-2 px-3 font-bold text-zinc-900 dark:text-white">10.14.0.22:8443</td>
+                    <td className="py-2 px-3 text-zinc-500">Telemetry RPC cluster heartbeat</td>
+                  </tr>
+                  <tr>
+                    <td className="py-2 px-3 text-zinc-500">Filesystem Lock</td>
+                    <td className="py-2 px-3 font-bold text-zinc-900 dark:text-white">C:\ProgramData\CodeMind\runtime.lock</td>
+                    <td className="py-2 px-3 text-zinc-500">Process instance concurrency lock</td>
+                  </tr>
+                  <tr>
+                    <td className="py-2 px-3 text-zinc-500">Registry Key</td>
+                    <td className="py-2 px-3 font-bold text-zinc-900 dark:text-white">HKLM\SYSTEM\CurrentControlSet\Services\Tcpip</td>
+                    <td className="py-2 px-3 text-zinc-500">Network socket buffer configuration query</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </section>
+        </div>
+      </div>
+    </div>
+  );
+};

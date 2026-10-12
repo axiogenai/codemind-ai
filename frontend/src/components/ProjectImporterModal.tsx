@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Upload, FolderSearch, ArrowRight, AlertCircle, Loader2, Globe, X } from 'lucide-react';
 import type { ProjectMeta, ProjectFile, KnowledgeGraphData, SecurityReport } from '../types';
 import { scanLocalDirectory, uploadProjectZip, scrapeWebsiteUrl } from '../services/api';
-import { LoadingLines } from './LoadingLines';
+import { CodebaseProcessingActivity } from './agents/CodebaseProcessingActivity';
 import { MeshDriftShaderBackground } from './MeshDriftShaderBackground';
 
 interface ProjectImporterModalProps {
@@ -32,12 +32,22 @@ export const ProjectImporterModal: React.FC<ProjectImporterModalProps> = ({
 
   if (importing) {
     return (
-      <div className="fixed inset-0 z-[9999] w-screen h-screen bg-zinc-50 dark:bg-[#0A0A0A] flex flex-col items-center justify-center select-none overflow-hidden transition-colors">
-        <LoadingLines />
+      <div className="fixed inset-0 z-[9999] w-screen h-screen bg-zinc-50 dark:bg-[#0A0A0A] flex flex-col items-center justify-center p-6 select-none overflow-hidden transition-colors">
+        <div className="w-full max-w-lg">
+          <CodebaseProcessingActivity
+            mode={activeTab}
+            targetName={
+              activeTab === 'local'
+                ? localPath
+                : activeTab === 'upload'
+                ? zipFile?.name
+                : websiteUrl
+            }
+          />
+        </div>
       </div>
     );
   }
-
   const handleScanLocal = async () => {
     if (!localPath.trim() || importing) return;
     setImporting(true);
@@ -236,24 +246,13 @@ export const ProjectImporterModal: React.FC<ProjectImporterModalProps> = ({
                 onChange={(e) => setZipFile(e.target.files?.[0] || null)}
                 className="absolute inset-0 opacity-0 cursor-pointer disabled:cursor-not-allowed"
               />
-              {importing ? (
-                <div className="flex flex-col items-center space-y-2 py-2">
-                  <Loader2 className="w-8 h-8 text-zinc-700 dark:text-zinc-300 animate-spin" />
-                  <span className="text-xs font-semibold text-zinc-800 dark:text-zinc-200 mt-2">
-                    Analyzing AST structure & building Knowledge Graph...
-                  </span>
-                </div>
-              ) : (
-                <>
-                  <Upload className="w-8 h-8 text-zinc-500 dark:text-zinc-400 mb-2" />
-                  <h4 className="text-xs font-bold text-zinc-900 dark:text-white mb-1">
-                    {zipFile ? zipFile.name : 'Click or Drag & Drop Project ZIP File'}
-                  </h4>
-                  <p className="text-[11px] text-zinc-500 dark:text-zinc-400 max-w-sm">
-                    Supports .zip archives containing Python, TS/JS, Java, Go, Rust, C++, SQL, Dockerfiles
-                  </p>
-                </>
-              )}
+              <Upload className="w-8 h-8 text-zinc-500 dark:text-zinc-400 mb-2" />
+              <h4 className="text-xs font-bold text-zinc-900 dark:text-white mb-1">
+                {zipFile ? zipFile.name : 'Click or Drag & Drop Project ZIP File'}
+              </h4>
+              <p className="text-[11px] text-zinc-500 dark:text-zinc-400 max-w-sm">
+                Supports .zip archives containing Python, TS/JS, Java, Go, Rust, C++, SQL, Dockerfiles
+              </p>
             </div>
 
             <button
@@ -261,17 +260,8 @@ export const ProjectImporterModal: React.FC<ProjectImporterModalProps> = ({
               disabled={importing || !zipFile}
               className="w-full py-3 rounded-xl bg-zinc-900 hover:bg-zinc-800 text-white dark:bg-white dark:hover:bg-zinc-200 dark:text-zinc-950 font-semibold text-xs transition-colors disabled:opacity-40 flex items-center justify-center space-x-2 cursor-pointer shadow-xs outline-none focus:outline-none focus:ring-0 select-none"
             >
-              {importing ? (
-                <>
-                  <Loader2 className="w-4 h-4 animate-spin text-current" />
-                  <span>Extracting & Generating Knowledge Graph...</span>
-                </>
-              ) : (
-                <>
-                  <span>Extract & Reverse Engineer ZIP</span>
-                  <ArrowRight className="w-4 h-4" />
-                </>
-              )}
+              <span>Extract & Reverse Engineer ZIP</span>
+              <ArrowRight className="w-4 h-4" />
             </button>
           </div>
         )}
@@ -301,17 +291,8 @@ export const ProjectImporterModal: React.FC<ProjectImporterModalProps> = ({
               disabled={importing || !websiteUrl.trim()}
               className="w-full py-3 rounded-xl bg-zinc-900 hover:bg-zinc-800 text-white dark:bg-white dark:hover:bg-zinc-200 dark:text-zinc-950 font-semibold text-xs transition-colors disabled:opacity-40 flex items-center justify-center space-x-2 cursor-pointer shadow-xs outline-none focus:outline-none focus:ring-0 select-none"
             >
-              {importing ? (
-                <>
-                  <Loader2 className="w-4 h-4 animate-spin text-current" />
-                  <span>Fetching Website Source & Analyzing AST...</span>
-                </>
-              ) : (
-                <>
-                  <span>Fetch & Reverse Engineer Website URL</span>
-                  <ArrowRight className="w-4 h-4" />
-                </>
-              )}
+              <span>Fetch & Reverse Engineer Website URL</span>
+              <ArrowRight className="w-4 h-4" />
             </button>
           </div>
         )}

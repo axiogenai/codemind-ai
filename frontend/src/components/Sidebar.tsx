@@ -9,6 +9,12 @@ import {
   ShieldAlert,
   FileCode,
   FolderTree,
+  Cpu,
+  GitFork,
+  Split,
+  Activity,
+  BrainCircuit,
+  FileSpreadsheet,
   X
 } from 'lucide-react';
 
@@ -21,7 +27,13 @@ export type ActiveTab =
   | 'chat'
   | 'security'
   | 'docs'
-  | 'files';
+  | 'files'
+  | 'binary-lab'
+  | 'call-tracer'
+  | 'binary-diff'
+  | 'runtime-inspector'
+  | 'func-intel'
+  | 'investigation-reports';
 
 interface SidebarProps {
   activeTab: ActiveTab;
@@ -57,6 +69,17 @@ export const Sidebar: React.FC<SidebarProps> = ({
         { id: 'overview', label: 'Overview', icon: LayoutDashboard, shortcut: '1' },
         { id: 'graph', label: 'Knowledge Graph', icon: Network, shortcut: '2' },
         { id: 'diagrams', label: 'Architecture Diagrams', icon: Layers, shortcut: '3' },
+      ]
+    },
+    {
+      title: 'BINARY LAB & REVERSE ENGINEERING',
+      items: [
+        { id: 'binary-lab', label: 'Binary Lab', icon: Cpu, badge: 'TOP', shortcut: 'B' },
+        { id: 'call-tracer', label: 'Control Flow & Call Tracer', icon: GitFork, shortcut: 'C' },
+        { id: 'binary-diff', label: 'Binary Diff & Versions', icon: Split, shortcut: 'D' },
+        { id: 'runtime-inspector', label: 'Runtime Inspector', icon: Activity, shortcut: 'R' },
+        { id: 'func-intel', label: 'Function Intelligence', icon: BrainCircuit, shortcut: 'F' },
+        { id: 'investigation-reports', label: 'Investigation Reports', icon: FileSpreadsheet, shortcut: 'I' },
       ]
     },
     {

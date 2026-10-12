@@ -18,10 +18,18 @@ import './components/effects/predictive-arc/styles.css';
 // Phase 2 Repository Transformation Engine
 import { TransformationEngineView } from './components/TransformationEngineView';
 
+// Binary Lab & Reverse Engineering Views
+import { BinaryLabView } from './components/BinaryLabView';
+import { ControlFlowTracerView } from './components/ControlFlowTracerView';
+import { BinaryDiffView } from './components/BinaryDiffView';
+import { RuntimeInspectorView } from './components/RuntimeInspectorView';
+import { FunctionIntelligenceView } from './components/FunctionIntelligenceView';
+import { InvestigationReportsView } from './components/InvestigationReportsView';
+
 import type { ProjectMeta, ProjectFile, KnowledgeGraphData, SecurityReport } from './types';
 import { FolderOpen, Upload, Globe, ArrowRight } from 'lucide-react';
 import { CodeMindLogo } from './components/CodeMindLogo';
-import { LoadingLines } from './components/LoadingLines';
+import { CodebaseProcessingActivity } from './components/agents/CodebaseProcessingActivity';
 import { fetchProjects, scanLocalDirectory, uploadProjectZip, scrapeWebsiteUrl, analyzeProject } from './services/api';
 
 export function App() {
@@ -173,8 +181,19 @@ export function App() {
 
   if (isImporting) {
     return (
-      <div className="fixed inset-0 z-[9999] w-screen h-screen bg-zinc-50 dark:bg-[#0A0A0A] flex flex-col items-center justify-center select-none overflow-hidden transition-colors">
-        <LoadingLines />
+      <div className="fixed inset-0 z-[9999] w-screen h-screen bg-zinc-50 dark:bg-[#0A0A0A] flex flex-col items-center justify-center p-6 select-none overflow-hidden transition-colors">
+        <div className="w-full max-w-lg">
+          <CodebaseProcessingActivity
+            mode={landingTab}
+            targetName={
+              landingTab === 'local'
+                ? localDirInput
+                : landingTab === 'upload'
+                ? selectedZipFile?.name
+                : websiteUrlInput
+            }
+          />
+        </div>
       </div>
     );
   }
@@ -269,7 +288,7 @@ export function App() {
                           : 'text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white border border-transparent'
                       }`}
                     >
-                      <Upload className="w-4 h-4 text-indigo-500 dark:text-indigo-400 shrink-0" strokeWidth={2} />
+                      <Upload className="w-4 h-4 text-sky-500 dark:text-sky-400 shrink-0" strokeWidth={2} />
                       <span className="truncate">Upload ZIP</span>
                     </button>
                     <button
@@ -281,7 +300,7 @@ export function App() {
                           : 'text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white border border-transparent'
                       }`}
                     >
-                      <Globe className="w-4 h-4 text-emerald-500 dark:text-emerald-400 shrink-0" strokeWidth={2} />
+                      <Globe className="w-4 h-4 text-amber-500 dark:text-amber-400 shrink-0" strokeWidth={2} />
                       <span className="truncate">Web / URL</span>
                     </button>
                   </div>
@@ -553,6 +572,31 @@ export function App() {
                     setFiles(prev => prev.map(f => f.path === path ? { ...f, code: newCode, lines: newCode.split('\n').length } : f));
                   }}
                 />
+              )}
+
+              {/* Binary Lab & Reverse Engineering Views */}
+              {activeTab === 'binary-lab' && (
+                <BinaryLabView />
+              )}
+
+              {activeTab === 'call-tracer' && (
+                <ControlFlowTracerView />
+              )}
+
+              {activeTab === 'binary-diff' && (
+                <BinaryDiffView />
+              )}
+
+              {activeTab === 'runtime-inspector' && (
+                <RuntimeInspectorView />
+              )}
+
+              {activeTab === 'func-intel' && (
+                <FunctionIntelligenceView />
+              )}
+
+              {activeTab === 'investigation-reports' && (
+                <InvestigationReportsView />
               )}
             </>
           )}
